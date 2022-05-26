@@ -9,8 +9,6 @@ import (
 	"os/exec"
 	"runtime"
 
-	_ "embed"
-
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
