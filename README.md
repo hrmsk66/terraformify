@@ -1,4 +1,4 @@
-g terraformify
+# terraformify
 
 An experimental CLI that generates TF files to manage existing Fastly services with Terraform
 
