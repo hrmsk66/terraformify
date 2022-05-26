@@ -66,8 +66,8 @@ type WAFResource struct {
 func NewWAFResource(id string, sr *VCLServiceResource) *WAFResource {
 	return &WAFResource{
 		VCLServiceResource: sr,
-		ID:                     id,
-		Name:                   "waf",
+		ID:                 id,
+		Name:               "waf",
 	}
 }
 func (w *WAFResource) GetType() string {
@@ -99,8 +99,8 @@ type ACLResource struct {
 func NewACLResource(id, name string, sr *VCLServiceResource) *ACLResource {
 	return &ACLResource{
 		VCLServiceResource: sr,
-		ID:                     id,
-		Name:                   name,
+		ID:                 id,
+		Name:               name,
 	}
 }
 func (a *ACLResource) GetType() string {
@@ -131,8 +131,8 @@ type DictionaryResource struct {
 func NewDictionaryResource(id, name string, sr *VCLServiceResource) *DictionaryResource {
 	return &DictionaryResource{
 		VCLServiceResource: sr,
-		ID:                     id,
-		Name:                   name,
+		ID:                 id,
+		Name:               name,
 	}
 }
 func (d *DictionaryResource) GetType() string {
@@ -163,8 +163,8 @@ type DynamicSnippetResource struct {
 func NewDynamicSnippetResource(id, name string, sr *VCLServiceResource) *DynamicSnippetResource {
 	return &DynamicSnippetResource{
 		VCLServiceResource: sr,
-		ID:                     id,
-		Name:                   name,
+		ID:                 id,
+		Name:               name,
 	}
 }
 func (ds *DynamicSnippetResource) GetType() string {

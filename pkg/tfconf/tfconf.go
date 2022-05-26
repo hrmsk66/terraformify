@@ -28,8 +28,8 @@ type TFConf struct {
 
 type SensitiveAttr struct {
 	BlockType string
-	Key string
-	Value string
+	Key       string
+	Value     string
 }
 
 func Load(rawHCL string) (*TFConf, error) {
@@ -213,10 +213,10 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-				ResourceName:  serviceProp.GetNormalizedName(),
+				ResourceName:    serviceProp.GetNormalizedName(),
 				NestedBlockName: blockType,
-				Name:          name,
-				AttributeName:         "xff",
+				Name:            name,
+				AttributeName:   "xff",
 			})
 			if err != nil {
 				return nil, err
@@ -237,10 +237,10 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-				ResourceName:  serviceProp.GetNormalizedName(),
+				ResourceName:    serviceProp.GetNormalizedName(),
 				NestedBlockName: blockType,
-				Name:          name,
-				AttributeName:         "content",
+				Name:            name,
+				AttributeName:   "content",
 			})
 			if err != nil {
 				return nil, err
@@ -265,10 +265,10 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-				ResourceName:  serviceProp.GetNormalizedName(),
+				ResourceName:    serviceProp.GetNormalizedName(),
 				NestedBlockName: blockType,
-				Name:          name,
-				AttributeName:         "content",
+				Name:            name,
+				AttributeName:   "content",
 			})
 			if err != nil {
 				return nil, err
@@ -293,10 +293,10 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-				ResourceName:  serviceProp.GetNormalizedName(),
+				ResourceName:    serviceProp.GetNormalizedName(),
 				NestedBlockName: blockType,
-				Name:          name,
-				AttributeName:         "content",
+				Name:            name,
+				AttributeName:   "content",
 			})
 			if err != nil {
 				return nil, err
@@ -322,10 +322,10 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 			keys := []string{"ssl_client_cert", "ssl_client_key"}
 			for _, k := range keys {
 				v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-					ResourceName:  serviceProp.GetNormalizedName(),
+					ResourceName:    serviceProp.GetNormalizedName(),
 					NestedBlockName: blockType,
-					Name:          name,
-					AttributeName:         k,
+					Name:            name,
+					AttributeName:   k,
 				})
 				if err != nil {
 					return nil, err
@@ -343,10 +343,10 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 					return nil, err
 				}
 				format, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-					ResourceName:  serviceProp.GetNormalizedName(),
+					ResourceName:    serviceProp.GetNormalizedName(),
 					NestedBlockName: blockType,
-					Name:          name,
-					AttributeName:         "format",
+					Name:            name,
+					AttributeName:   "format",
 				})
 				ext := "txt"
 				if json.Valid(format.Bytes()) {
@@ -413,10 +413,10 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 				}
 				for _, k := range keys {
 					v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-						ResourceName:  serviceProp.GetNormalizedName(),
+						ResourceName:    serviceProp.GetNormalizedName(),
 						NestedBlockName: blockType,
-						Name:          name,
-						AttributeName:         k,
+						Name:            name,
+						AttributeName:   k,
 					})
 					if err != nil {
 						return nil, err
@@ -534,8 +534,8 @@ func rewriteCommonAttributes(block *hclwrite.Block, serviceProp *prop.VCLService
 	}
 	name, err := st.ResourceNameQuery(tfstate.ResourceNameQueryParams{
 		NestedBlockName: attrName,
-		IDName:        idName,
-		ID:            id,
+		IDName:          idName,
+		ID:              id,
 	})
 	if err != nil {
 		return err

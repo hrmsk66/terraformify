@@ -8,7 +8,6 @@ import (
 	_ "embed"
 )
 
-
 const tfVersion = "1.1.9"
 
 //go:embed static/provider.tf

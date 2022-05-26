@@ -11,20 +11,20 @@ const DsnippetQueryTmplate = `.resources[] | select(.name == "{{.ResourceName}}"
 const ResourceNameQueryTmplate = `.resources[] | select(.type == "fastly_service_vcl") | .instances[].attributes.{{.NestedBlockName}}[] | select(.{{.IDName}} == "{{.ID}}") | .name`
 
 type ServiceQueryParams struct {
-	ResourceName  string
+	ResourceName    string
 	NestedBlockName string
-	Name          string
-	AttributeName         string
+	Name            string
+	AttributeName   string
 }
 
 type DSnippetQueryParams struct {
-	ResourceName  string
+	ResourceName string
 }
 
 type ResourceNameQueryParams struct {
 	NestedBlockName string
-	IDName        string
-	ID            string
+	IDName          string
+	ID              string
 }
 
 func (s *TFStateWithTemplate) ServiceQuery(params ServiceQueryParams) (*TFState, error) {

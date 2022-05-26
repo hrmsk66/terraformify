@@ -183,7 +183,6 @@ func importService(c cli.Config) error {
 	defer f.Close()
 	f.Write(hcl.Bytes())
 
-
 	log.Print("[INFO] Writing .gitignore")
 	if err := file.CreateGitIgnore(c.Directory); err != nil {
 		return err
@@ -199,7 +198,6 @@ func importService(c cli.Config) error {
 	if err != nil {
 		return err
 	}
-
 
 	if c.ManageAll {
 		log.Print(`[INFO] Settting "manage_*" in terraform.tfstate`)

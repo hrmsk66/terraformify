@@ -12,13 +12,13 @@ const setIndexKeyTmplate = `(.resources[] | select(.type == "{{.ResourceType}}")
 const setSensitiveAttributeTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].sensitive_attributes) += [[{type: "get_attr", value: "{{.BlockType}}"}]]`
 
 type setManageAttributeParams struct {
-	ResourceType string
+	ResourceType  string
 	AttributeName string
 }
 
 type setSensitiveAttributeParams struct {
 	ResourceType string
-	BlockType string
+	BlockType    string
 }
 
 type SetIndexKeyParams struct {
@@ -38,7 +38,7 @@ func (s *TFState) SetIndexKey(param SetIndexKeyParams) (*TFState, error) {
 	err = st.Execute(&q, SetIndexKeyParams{
 		ResourceType: param.ResourceType,
 		ResourceName: param.ResourceName,
-		Name: param.Name,
+		Name:         param.Name,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("tfstate: invalid params: %w", err)
@@ -58,7 +58,7 @@ func (s *TFState) SetSensitiveAttributes(blockTypes map[string]struct{}) (*TFSta
 
 		err = st.Execute(&q, setSensitiveAttributeParams{
 			ResourceType: "fastly_service_vcl",
-			BlockType: blockType,
+			BlockType:    blockType,
 		})
 
 		if err != nil {
