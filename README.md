@@ -27,7 +27,7 @@ mkdir test && cd test
 terraformify service <service-id>
 ```
 
-**Note:** The generated main.tf may contain sensitive information such as API keys for logging endpoints; before committing to Git, replace them with variables so that the configuration file does not contain such information.
+**Note:** The tool replaces sensitive values in `main.tf` with variables and stores the values in `terraform.tfvars`, but only those marked as **Sensitive** in the Fastly Terraform provider’s schema. If your configuration contains other sensitive information, be sure to replace them as well before committing the files to the version control system.
 
 ### Interactive mode
 

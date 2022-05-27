@@ -7,13 +7,14 @@ import (
 
 // query templates for gojq
 const setActivate = `(.resources[] | select(.type == "fastly_service_vcl" or .type == "fastly_service_waf_configuration") | .instances[].attributes.activate) |= true`
-const setManageAttributeTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].attributes.{{.AttributeName}}) |= true`
 const setIndexKeyTmplate = `(.resources[] | select(.type == "{{.ResourceType}}") | select(.name == "{{.ResourceName}}") | .instances[]) += {index_key: "{{.Name}}"}`
 const setSensitiveAttributeTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].sensitive_attributes) += [[{type: "get_attr", value: "{{.BlockType}}"}]]`
+const setManageAttributeTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].attributes.{{.AttributeName}}) |= true`
 
-type setManageAttributeParams struct {
-	ResourceType  string
-	AttributeName string
+type SetIndexKeyParams struct {
+	ResourceType string
+	ResourceName string
+	Name         string
 }
 
 type setSensitiveAttributeParams struct {
@@ -21,10 +22,14 @@ type setSensitiveAttributeParams struct {
 	BlockType    string
 }
 
-type SetIndexKeyParams struct {
-	ResourceType string
-	ResourceName string
-	Name         string
+type setManageAttributeParams struct {
+	ResourceType  string
+	AttributeName string
+}
+
+func (s *TFState) SetActivateAttributes() (*TFState, error) {
+	q := setActivate
+	return s.Query(q)
 }
 
 func (s *TFState) SetIndexKey(param SetIndexKeyParams) (*TFState, error) {
@@ -101,9 +106,4 @@ func (s *TFState) SetManageAttributes() (*TFState, error) {
 	}
 
 	return s, nil
-}
-
-func (s *TFState) SetActivateAttributes() (*TFState, error) {
-	q := setActivate
-	return s.Query(q)
 }
