@@ -86,7 +86,7 @@ Directly modifying the state file is generally discouraged. So, why does this to
 One of the problems with HCL generated from existing infrastructure is the hard-coded resource IDs.
 
 ```hcl
-resource "fastly_service_dictionary_items" "items" {
+resource "fastly_service_dictionary_items" "my_dictionary" {
   service_id      = "4j5SMoDV5RqBypRGLJcTiu"
   dictionary_id = "6pD9ikK9iBXUmfmCL3sI2I"
   items = {
@@ -100,8 +100,8 @@ To make the code reusable, the tool replaces these IDs.
 In the case of `dictionary_id`, the tool inserts `for_each` into the resource block and replaces the hard-coded ID with `each.value.dictionary_id`
 
 ```hcl
-resource "fastly_service_dictionary_items" "items" {
-  service_id = fastly_service_vcl.myservice.id
+resource "fastly_service_dictionary_items" "my_dictionary" {
+  service_id = fastly_service_vcl.service.id
   dictionary_id = each.value.dictionary_id
   items = {
     key1: "value1"
@@ -109,7 +109,7 @@ resource "fastly_service_dictionary_items" "items" {
   }
 
   for_each = {
-    for d in fastly_service_vcl.myservice.dictionary : d.name => d if d.name == var.mydict_name
+    for d in fastly_service_vcl.service.dictionary : d.name => d if d.name == "my_dictionary"
   }
 }
 ```
@@ -121,11 +121,11 @@ By inserting the dictionary name as `index_key` in the state file, Terraform und
 {
   "mode": "managed",
   "type": "fastly_service_dictionary_items",
-  "name": "origin_weights",
+  "name": "my_dictionary",
   "provider": "provider[\"registry.terraform.io/fastly/fastly\"]",
   "instances": [
     {
-      "index_key": "service config", <---
+      "index_key": "my_dictionary", <---
       "schema_version": 0,
 ```
 
