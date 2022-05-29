@@ -25,7 +25,6 @@ var serviceCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filter := cli.CreateLogFilter()
 		log.SetOutput(filter)
-		log.Printf("[INFO] CLI version: %s", version)
 
 		workingDir, err := cmd.Flags().GetString("working-dir")
 		if err != nil {
@@ -143,7 +142,7 @@ func importService(c cli.Config) error {
 		return err
 	}
 
-	// Iterate over the list of props and run terraform import for WAF, ACL/dicitonary items, and dynamic snippets
+	// Iterate over the list of props and run terraform import for WAF, ACL/dictionary items, and dynamic snippets
 	for _, p := range props {
 		switch p := p.(type) {
 		case *prop.WAFResource, *prop.ACLResource, *prop.DictionaryResource, *prop.DynamicSnippetResource:

@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/fatih/color v1.13.0
+	github.com/gruntwork-io/terratest v0.40.10
 	github.com/hashicorp/go-version v1.4.0
 	github.com/hashicorp/hc-install v0.3.2
 	github.com/hashicorp/hcl/v2 v2.12.0
@@ -12,6 +13,7 @@ require (
 	github.com/itchyny/gojq v0.12.7
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.11.0
+	github.com/stretchr/testify v1.7.1
 	github.com/zclconf/go-cty v1.10.0
 )
 
@@ -31,7 +33,6 @@ require (
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/googleapis/gax-go/v2 v2.3.0 // indirect
-	github.com/gruntwork-io/terratest v0.40.10 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-getter v1.5.9 // indirect
@@ -59,7 +60,6 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.7.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/tmccombs/hcl2json v0.3.3 // indirect
 	github.com/ulikunitz/xz v0.5.8 // indirect

@@ -8,3 +8,6 @@
 # Test binary, built with `go test -c`
 *.test
 .DS_Store
+
+bin/
+.vscode/
