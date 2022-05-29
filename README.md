@@ -47,7 +47,7 @@ terraformify service <service-id> -v <version-number>
 
 ### force_destroy
 
-By default, `force_destroy` is set to `false`. To set them to `true` and allow Terraform to destroy resouces, use the `--force-destroy` or `-f` flag.
+By default, `force_destroy` is set to `false`. To set them to `true` and allow Terraform to destroy resources, use the `--force-destroy` or `-f` flag.
 
 ```
 terraformify service <service-id> -f
