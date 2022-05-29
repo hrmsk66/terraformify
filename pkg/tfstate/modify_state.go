@@ -5,11 +5,14 @@ import (
 	"fmt"
 )
 
-// query templates for gojq
+// query and query templates for gojq
 const setActivate = `(.resources[] | select(.type == "fastly_service_vcl" or .type == "fastly_service_waf_configuration") | .instances[].attributes.activate) |= true`
 const setIndexKeyTmplate = `(.resources[] | select(.type == "{{.ResourceType}}") | select(.name == "{{.ResourceName}}") | .instances[]) += {index_key: "{{.Name}}"}`
 const setSensitiveAttributeTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].sensitive_attributes) += [[{type: "get_attr", value: "{{.BlockType}}"}]]`
 const setManageAttributeTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].attributes.{{.AttributeName}}) |= true`
+const setServiceForceDestroy = `(.resources[] | select(.type == "fastly_service_vcl") | .instances[].attributes.force_destroy) |= true`
+const setACLForceDestroy = `(.resources[] | select(.type == "fastly_service_vcl") | .instances[].attributes | .acl[].force_destroy) |= true`
+const setDictionaryForceDestroy = `(.resources[] | select(.type == "fastly_service_vcl") | .instances[].attributes | .dictionary[].force_destroy) |= true`
 
 type SetIndexKeyParams struct {
 	ResourceType string
@@ -106,4 +109,16 @@ func (s *TFState) SetManageAttributes() (*TFState, error) {
 	}
 
 	return s, nil
+}
+
+func (s *TFState) SetForceDestroy() (*TFState, error) {
+	s, err := s.Query(setServiceForceDestroy)
+	if err != nil {
+		return nil, err
+	}
+	s, err = s.Query(setACLForceDestroy)
+	if err != nil {
+		return nil, err
+	}
+	return s.Query(setDictionaryForceDestroy)
 }

@@ -14,16 +14,20 @@ import (
 )
 
 type Config struct {
-	ID          string
-	Version     int
-	Directory   string
-	Interactive bool
-	ManageAll   bool
+	ID            string
+	Version       int
+	Directory     string
+	Interactive   bool
+	ManageAll     bool
+	ForceDestroy  bool
+	SkipEditState bool
 }
 
 var Bold = color.New(color.Bold).SprintFunc()
 var BoldGreen = color.New(color.Bold, color.FgGreen).SprintFunc()
+var BoldGreenf = color.New(color.Bold, color.FgGreen).SprintfFunc()
 var BoldYellow = color.New(color.Bold, color.FgYellow).SprintFunc()
+var BoldYellowf = color.New(color.Bold, color.FgYellow).SprintfFunc()
 
 func CreateLogFilter() io.Writer {
 	minLevel := os.Getenv("TMFY_LOG")

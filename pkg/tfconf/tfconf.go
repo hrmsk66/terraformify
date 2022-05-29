@@ -185,24 +185,34 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 		}
 
 		if comment == "" {
-			// Set blank for the service-level comment, otherwise Terraform set `Managed by Terraform` by default causing config diffs.
 			body.SetAttributeValue("comment", cty.StringVal(""))
 		}
 	}
 
+	if c.ForceDestroy {
+		body.AppendNewline()
+		body.SetAttributeValue("force_destroy", cty.BoolVal(true))
+	}
+
 	for _, block := range body.Blocks() {
 		blockType := block.Type()
-		nestedBlock := block.Body()
+		nestedBody := block.Body()
 
 		switch blockType {
 		case "acl":
-			nestedBlock.RemoveAttribute("acl_id")
+			nestedBody.RemoveAttribute("acl_id")
+			if c.ForceDestroy {
+				nestedBody.SetAttributeValue("force_destroy", cty.BoolVal(true))
+			}
 		case "dictionary":
-			nestedBlock.RemoveAttribute("dictionary_id")
+			nestedBody.RemoveAttribute("dictionary_id")
+			if c.ForceDestroy {
+				nestedBody.SetAttributeValue("force_destroy", cty.BoolVal(true))
+			}
 		case "waf":
-			nestedBlock.RemoveAttribute("waf_id")
+			nestedBody.RemoveAttribute("waf_id")
 		case "dynamicsnippet":
-			nestedBlock.RemoveAttribute("snippet_id")
+			nestedBody.RemoveAttribute("snippet_id")
 		case "request_setting":
 			// Get name from TFConf
 			name, err := getStringAttributeValue(block, "name")
@@ -225,7 +235,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 			// Because of the default value, Terraform attempts to add the default value even if the value is not set for the actual service.
 			// To workaround the issue, explicitly setting xff attribute with blank value if it's blank in the state file
 			if v.String() == "" {
-				nestedBlock.SetAttributeValue("xff", cty.StringVal(""))
+				nestedBody.SetAttributeValue("xff", cty.StringVal(""))
 			}
 		case "response_object":
 			// Get name from TFConf
@@ -254,7 +264,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 			// Replace content attribute of the nested block with file function expression
 			path := fmt.Sprintf("./content/%s", filename)
 			tokens := buildFileFunction(path)
-			nestedBlock.SetAttributeRaw("content", tokens)
+			nestedBody.SetAttributeRaw("content", tokens)
 		case "snippet":
 			// Get name from TFConf
 			name, err := getStringAttributeValue(block, "name")
@@ -282,7 +292,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 			// Replace content attribute of the nested block with file function expression
 			path := fmt.Sprintf("./vcl/%s", filename)
 			tokens := buildFileFunction(path)
-			nestedBlock.SetAttributeRaw("content", tokens)
+			nestedBody.SetAttributeRaw("content", tokens)
 		case "vcl":
 			// Get name from TFConf
 			name, err := getStringAttributeValue(block, "name")
@@ -310,7 +320,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 			// Replace content attribute of the nested block with file function expression
 			path := fmt.Sprintf("./vcl/%s", filename)
 			tokens := buildFileFunction(path)
-			nestedBlock.SetAttributeRaw("content", tokens)
+			nestedBody.SetAttributeRaw("content", tokens)
 		case "backend":
 			name, err := getStringAttributeValue(block, "name")
 			if err != nil {
@@ -331,7 +341,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 				}
 				if v.String() != "" {
 					varName := naming.Normalize(name) + "_" + k
-					nestedBlock.SetAttributeTraversal(k, buildVariableRef(varName))
+					nestedBody.SetAttributeTraversal(k, buildVariableRef(varName))
 					sensitiveAttrs = append(sensitiveAttrs, SensitiveAttr{blockType, varName, v.String()})
 				}
 			}
@@ -358,7 +368,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 				// Replace content attribute of the nested block with file function expression
 				path := fmt.Sprintf("./logformat/%s", filename)
 				tokens := buildFileFunction(path)
-				nestedBlock.SetAttributeRaw("format", tokens)
+				nestedBody.SetAttributeRaw("format", tokens)
 
 				// Handling sensitive attrs
 				var keys []string
@@ -423,7 +433,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 
 					// the attribute names for under "logging_s3" are redundant. Removing the prefix "s3_" in the variable names
 					varName := naming.Normalize(name) + "_" + strings.TrimPrefix(k, "s3_")
-					nestedBlock.SetAttributeTraversal(k, buildVariableRef(varName))
+					nestedBody.SetAttributeTraversal(k, buildVariableRef(varName))
 					sensitiveAttrs = append(sensitiveAttrs, SensitiveAttr{blockType, varName, v.String()})
 				}
 			}
@@ -543,6 +553,7 @@ func rewriteCommonAttributes(block *hclwrite.Block, serviceProp *prop.VCLService
 	body := block.Body()
 
 	// Add for_each to the resource block
+	body.AppendNewline()
 	tokens := buildForEach(attrName, name.String())
 	body.SetAttributeRaw("for_each", tokens)
 

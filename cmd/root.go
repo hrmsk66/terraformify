@@ -10,7 +10,7 @@ import (
 )
 
 var cfgFile string
-var version = "0.2.0"
+var version string = "v0.2.1"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -35,6 +35,10 @@ func init() {
 	rootCmd.PersistentFlags().StringP("working-dir", "d", ".", "Terraform working directory")
 	rootCmd.PersistentFlags().BoolP("interactive", "i", false, "Interactively select associated resources to import")
 	rootCmd.PersistentFlags().StringP("api-key", "k", "", "Fastly API token (or via FASTLY_API_KEY)")
+
+	// Hidden flags
+	rootCmd.PersistentFlags().BoolP("skip-edit-state", "s", false, "Skip editing terraform.tfstate and leave it untouched (Note: Diffs will be detected on terraform plan/apply)")
+	rootCmd.PersistentFlags().MarkHidden("skip-edit-state")
 
 	// Associate --api-key with the env ver, FASTLY_API_KEY
 	replacer := strings.NewReplacer("-", "_")

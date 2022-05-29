@@ -54,12 +54,22 @@ var serviceCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		forceDestroy, err := cmd.Flags().GetBool("force-destroy")
+		if err != nil {
+			return err
+		}
+		skipEditState, err := cmd.Flags().GetBool("skip-edit-state")
+		if err != nil {
+			return err
+		}
 		c := cli.Config{
-			ID:          args[0],
-			Version:     version,
-			Directory:   workingDir,
-			Interactive: interactive,
-			ManageAll:   manageAll,
+			ID:            args[0],
+			Version:       version,
+			Directory:     workingDir,
+			Interactive:   interactive,
+			ManageAll:     manageAll,
+			ForceDestroy:  forceDestroy,
+			SkipEditState: skipEditState,
 		}
 
 		return importService(c)
@@ -72,6 +82,7 @@ func init() {
 	// Persistent flags
 	serviceCmd.PersistentFlags().IntP("version", "v", 0, "Version of the service to be imported")
 	serviceCmd.PersistentFlags().BoolP("manage-all", "m", false, "Manage all associated resources")
+	serviceCmd.PersistentFlags().BoolP("force-destroy", "f", false, "Set force-destroy to true for the service and associated resources")
 }
 
 func importService(c cli.Config) error {
@@ -188,40 +199,6 @@ func importService(c cli.Config) error {
 		return err
 	}
 
-	log.Print(`[INFO] Setting "activate" in terraform.tfstate`)
-	curState, err := tfstate.Load(c.Directory)
-	if err != nil {
-		return err
-	}
-
-	newState, err := curState.SetActivateAttributes()
-	if err != nil {
-		return err
-	}
-
-	if c.ManageAll {
-		log.Print(`[INFO] Settting "manage_*" in terraform.tfstate`)
-		newState, err = newState.SetManageAttributes()
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, p := range props {
-		switch p := p.(type) {
-		case *prop.ACLResource, *prop.DictionaryResource, *prop.DynamicSnippetResource:
-			log.Printf(`[INFO] Setting "index_key" in terraform.tfstate for %s`, p.GetRef())
-			newState, err = newState.SetIndexKey(tfstate.SetIndexKeyParams{
-				ResourceType: p.GetType(),
-				ResourceName: p.GetNormalizedName(),
-				Name:         p.GetName(),
-			})
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	if len(sensitiveAttrs) > 0 {
 		log.Print("[INFO] Writing variables.tf")
 		variables := tfconf.BuildVariableDefinitions(sensitiveAttrs)
@@ -234,28 +211,76 @@ func importService(c cli.Config) error {
 		if err := file.CreateTFVars(c.Directory, tfvars); err != nil {
 			return err
 		}
+	}
 
-		log.Print(`[INFO] Setting "sensitive_attributes" in terraform.tfstate`)
-		// Need to set once for each sensitive attribute
-		blockTypes := map[string]struct{}{}
-		for _, attr := range sensitiveAttrs {
-			blockTypes[attr.BlockType] = struct{}{}
-		}
-		newState, err = newState.SetSensitiveAttributes(blockTypes)
+	if c.SkipEditState {
+		log.Print(cli.BoldYellow("skip-edit-state flag detected. Leaving terraform.tfstate untouched"))
+	} else {
+		log.Print(`[INFO] Setting "activate" in terraform.tfstate`)
+		curState, err := tfstate.Load(c.Directory)
 		if err != nil {
 			return err
 		}
-	}
 
-	path = filepath.Join(c.Directory, "terraform.tfstate")
-	f, err = os.OpenFile(path, os.O_RDWR|os.O_TRUNC, 0644)
-	f.Write(newState.Bytes())
-	f.Close()
+		newState, err := curState.SetActivateAttributes()
+		if err != nil {
+			return err
+		}
 
-	log.Print(`[INFO] Running "terraform refresh" to format the state file and check errors`)
-	err = terraform.Refresh(tf)
-	if err != nil {
-		return err
+		if c.ManageAll {
+			log.Print(`[INFO] Settting "manage_*" in terraform.tfstate`)
+			newState, err = newState.SetManageAttributes()
+			if err != nil {
+				return err
+			}
+		}
+
+		if c.ForceDestroy {
+			log.Print(`[INFO] Settting "force_destroy" in terraform.tfstate`)
+			newState, err = newState.SetForceDestroy()
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, p := range props {
+			switch p := p.(type) {
+			case *prop.ACLResource, *prop.DictionaryResource, *prop.DynamicSnippetResource:
+				log.Printf(`[INFO] Inserting "index_key" in terraform.tfstate for %s`, p.GetRef())
+				newState, err = newState.SetIndexKey(tfstate.SetIndexKeyParams{
+					ResourceType: p.GetType(),
+					ResourceName: p.GetNormalizedName(),
+					Name:         p.GetName(),
+				})
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		if len(sensitiveAttrs) > 0 {
+			log.Print(`[INFO] Inserting items in "sensitive_attributes" in terraform.tfstate`)
+			// Need to set once for each sensitive attribute
+			blockTypes := map[string]struct{}{}
+			for _, attr := range sensitiveAttrs {
+				blockTypes[attr.BlockType] = struct{}{}
+			}
+			newState, err = newState.SetSensitiveAttributes(blockTypes)
+			if err != nil {
+				return err
+			}
+		}
+
+		path = filepath.Join(c.Directory, "terraform.tfstate")
+		f, err = os.OpenFile(path, os.O_RDWR|os.O_TRUNC, 0644)
+		f.Write(newState.Bytes())
+		f.Close()
+
+		log.Print(`[INFO] Running "terraform refresh" to format the state file and check errors`)
+		err = terraform.Refresh(tf)
+		if err != nil {
+			return err
+		}
 	}
 
 	fmt.Fprintln(os.Stderr)

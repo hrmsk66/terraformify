@@ -15,8 +15,8 @@ go install github.com/hrmsk66/terraformify@latest
 terraformify requires read permissions to the target Fastly resource.
 Choose one of the following options to give terraformify access to your API token:
 
-- Include the token explicitly on each command you run using the `--api-key` or `-k` flags.
-- Set a `FASTLY_API_KEY` environment variable.
+-   Include the token explicitly on each command you run using the `--api-key` or `-k` flags.
+-   Set a `FASTLY_API_KEY` environment variable.
 
 ## Usage
 
@@ -27,7 +27,7 @@ mkdir test && cd test
 terraformify service <service-id>
 ```
 
-**Note:** The tool replaces sensitive values in `main.tf` with variables and stores the values in `terraform.tfvars`, but only those marked as **Sensitive** in the Fastly Terraform provider’s schema. If your configuration contains other sensitive information, be sure to replace them as well before committing the files to the version control system.
+terraformify replaces sensitive values in `main.tf`, attributes marked as **Sensitive** in the Fastly provider's schema, with variables and stores them in `terraform.tfvars`. The tool generates `.gitignore` to prevent `terraform.tfvars` from accidentaly bening committed to Git repos.
 
 ### Interactive mode
 
@@ -45,6 +45,14 @@ By default, either the active version will be imported, or the latest version if
 terraformify service <service-id> -v <version-number>
 ```
 
+### force_destroy
+
+By default, `force_destroy` is set to `false`. To set them to `true` and allow Terraform to destroy resouces, use the `--force-destroy` or `-f` flag.
+
+```
+terraformify service <service-id> -f
+```
+
 ### Manage associated resources
 
 By default, the `manage_*` attribute is not set so that these resources can be managed externally.
@@ -59,6 +67,16 @@ To set the attributes to true and manage the resource with Terraform, use the `-
 
 ```
 terraformify service <service-id> -m
+```
+
+### Skip editing terraform.tfstate
+
+By default, terraformify updates `terraform.tfstate` directly. To disable this behavior and leave the state file untouched, use the `--skip-edit-state` or `-s` flag.
+
+**Note:** Terraform detects diffs without this behavior and `terraform apply` may result in the destruction and re-creation of associated resources, such as ACL entries and Dictionary items.
+
+```
+terraformify service <service-id> -s
 ```
 
 ## License
