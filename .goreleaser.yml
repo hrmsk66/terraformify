@@ -1,0 +1,30 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X github.com/hrmsk66/terraformify/cmd.version={{.Version}}'
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - 386
+      - amd64
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: windows
+        goarch: arm64
+archives:
+  - format: zip
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    wrap_in_directory: true
+checksum:
+  name_template: "checksums.txt"
+changelog:
+  sort: asc
