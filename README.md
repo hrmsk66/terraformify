@@ -115,6 +115,7 @@ resource "fastly_service_dictionary_items" "my_dictionary" {
 ```
 
 But it causes another problem: Terraform gets confused and plans to destroy and recreate the dictionary items.
+
 By inserting the dictionary name as `index_key` in the state file, Terraform understands that recreation is not necessary.
 
 ```json
