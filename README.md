@@ -79,6 +79,65 @@ By default, terraformify updates `terraform.tfstate` directly. To disable this b
 terraformify service <service-id> -s
 ```
 
+## About directly modifying the Terraform state file
+
+Directly modifying the state file is generally discouraged. So, why does this tool make such changes?
+
+One of the problems with HCL generated from existing infrastructure is the hard-coded resource IDs.
+
+```hcl
+resource "fastly_service_dictionary_items" "items" {
+  service_id      = "4j5SMoDV5RqBypRGLJcTiu"
+  dictionary_id = "6pD9ikK9iBXUmfmCL3sI2I"
+  items = {
+    key1: "value1"
+    key2: "value2"
+  }
+}
+```
+
+To make the code reusable, the tool replaces these IDs.
+In the case of `dictionary_id`, the tool inserts `for_each` into the resource block and replaces the hard-coded ID with `each.value.dictionary_id`
+
+```hcl
+resource "fastly_service_dictionary_items" "items" {
+  service_id = fastly_service_vcl.myservice.id
+  dictionary_id = each.value.dictionary_id
+  items = {
+    key1: "value1"
+    key2: "value2"
+  }
+
+  for_each = {
+    for d in fastly_service_vcl.myservice.dictionary : d.name => d if d.name == var.mydict_name
+  }
+}
+```
+
+But it causes another problem: Terraform gets confused and plans to destroy and recreate the dictionary items.
+By inserting the dictionary name as `index_key` in the state file, Terraform understands that recreation is not necessary.
+
+```json
+{
+  "mode": "managed",
+  "type": "fastly_service_dictionary_items",
+  "name": "origin_weights",
+  "provider": "provider[\"registry.terraform.io/fastly/fastly\"]",
+  "instances": [
+    {
+      "index_key": "service config", <---
+      "schema_version": 0,
+```
+
+The contents of the resulting state file are the same as when Terraform destroys and re-creates the items.
+
+Depending on the service configuration and the given CLI options, the tool also makes changes to the following items in the state file:
+
+- activate
+- manage_entries, manage_items, manage_snippets
+- sensitive_attributes
+- force_destroy
+
 ## License
 
 MIT License
