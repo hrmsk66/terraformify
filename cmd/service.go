@@ -24,6 +24,7 @@ var serviceCmd = &cobra.Command{
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filter := cli.CreateLogFilter()
+		log.Printf("[INFO] CLI version: %s", getVersion())
 		log.SetOutput(filter)
 
 		workingDir, err := cmd.Flags().GetString("working-dir")

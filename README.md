@@ -10,13 +10,15 @@ https://user-images.githubusercontent.com/30490956/169726673-33ecccf7-ae40-4ebd-
 go install github.com/hrmsk66/terraformify@latest
 ```
 
+Or download the prebuild binary from [the latest release](https://github.com/hrmsk66/terraformify/releases/latest).
+
 ## Configuration
 
 terraformify requires read permissions to the target Fastly resource.
 Choose one of the following options to give terraformify access to your API token:
 
--   Include the token explicitly on each command you run using the `--api-key` or `-k` flags.
--   Set a `FASTLY_API_KEY` environment variable.
+- Include the token explicitly on each command you run using the `--api-key` or `-k` flags.
+- Set a `FASTLY_API_KEY` environment variable.
 
 ## Usage
 

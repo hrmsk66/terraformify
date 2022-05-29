@@ -15,7 +15,7 @@ clean:
 	rm -r -f bin/*
 
 build: clean
-	go build -trimpath $(LDFLAGS) -o bin/terraformify main.go
+	go build -trimpath $(LDFLAGS) -o dist/terraformify main.go
 
 prep: fmt lint
 

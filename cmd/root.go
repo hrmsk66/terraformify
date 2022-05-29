@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -14,6 +13,18 @@ import (
 var cfgFile string
 var version string
 
+func getVersion() string {
+	if version != "" {
+		return version
+	}
+
+	if buildInfo, ok := debug.ReadBuildInfo(); ok {
+		return buildInfo.Main.Version
+	}
+
+	return "(unknown)"
+}
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "terraformify",
@@ -23,7 +34,6 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	log.Printf("[INFO] CLI version: %s", getVersion())
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
@@ -72,16 +82,4 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
-}
-
-func getVersion() string {
-	if version != "" {
-		return version
-	}
-
-	if buildInfo, ok := debug.ReadBuildInfo(); ok {
-		return buildInfo.Main.Version
-	}
-
-	return "(unknown)"
 }
