@@ -71,7 +71,7 @@ To set the attributes to true and manage the resource with Terraform, use the `-
 terraformify service <service-id> -m
 ```
 
-### Skip editing terraform.tfstate
+### Skip editing the state file
 
 By default, terraformify updates `terraform.tfstate` directly. To disable this behavior and leave the state file untouched, use the `--skip-edit-state` or `-s` flag.
 
