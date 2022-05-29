@@ -6,7 +6,7 @@ builds:
       - CGO_ENABLED=0
     ldflags:
       - -s -w
-      - -X github.com/hrmsk66/terraformify/cmd.version={{.Version}}'
+      - -X github.com/hrmsk66/terraformify/cmd.version={{.Version}}
     goos:
       - linux
       - windows
