@@ -29,8 +29,6 @@ mkdir test && cd test
 terraformify service <service-id>
 ```
 
-The tool replaces sensitive values in `main.tf`, attributes marked as **Sensitive** in the Fastly provider's schema, with variables and stores them in `terraform.tfvars`. The tool also generates `.gitignore` to prevent `terraform.tfvars` from accidentaly bening committed to Git repos.
-
 ### Interactive mode
 
 By default, the tool imports all resources associated with the service, such as ACL entries, dictionary items, WAF..etc. To interactively select which resources to import, use the `--interactive` or `-i` flag.
