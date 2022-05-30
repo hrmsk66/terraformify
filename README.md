@@ -14,7 +14,7 @@ Or download the prebuild binary from [the latest release](https://github.com/hrm
 
 ## Configuration
 
-terraformify requires read permissions to the target Fastly resource.
+The tool requires read permissions to the target Fastly resource.
 Choose one of the following options to give terraformify access to your API token:
 
 - Include the token explicitly on each command you run using the `--api-key` or `-k` flags.
@@ -29,11 +29,11 @@ mkdir test && cd test
 terraformify service <service-id>
 ```
 
-terraformify replaces sensitive values in `main.tf`, attributes marked as **Sensitive** in the Fastly provider's schema, with variables and stores them in `terraform.tfvars`. The tool generates `.gitignore` to prevent `terraform.tfvars` from accidentaly bening committed to Git repos.
+The tool replaces sensitive values in `main.tf`, attributes marked as **Sensitive** in the Fastly provider's schema, with variables and stores them in `terraform.tfvars`. The tool also generates `.gitignore` to prevent `terraform.tfvars` from accidentaly bening committed to Git repos.
 
 ### Interactive mode
 
-By default, terraformify imports all resources associated with the service, such as ACL entries, dictionary items, WAF..etc. To interactively select which resources to import, use the `--interactive` or `-i` flag.
+By default, the tool imports all resources associated with the service, such as ACL entries, dictionary items, WAF..etc. To interactively select which resources to import, use the `--interactive` or `-i` flag.
 
 ```
 terraformify service <service-id> -i
@@ -73,7 +73,7 @@ terraformify service <service-id> -m
 
 ### Skip editing the state file
 
-By default, terraformify updates `terraform.tfstate` directly. To disable this behavior and leave the state file untouched, use the `--skip-edit-state` or `-s` flag.
+By default, the tool updates `terraform.tfstate` directly. To disable this behavior and leave the state file untouched, use the `--skip-edit-state` or `-s` flag.
 
 **Note:** Terraform detects diffs without this behavior and `terraform apply` may result in the destruction and re-creation of associated resources, such as ACL entries and Dictionary items.
 
