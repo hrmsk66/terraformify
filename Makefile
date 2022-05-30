@@ -1,8 +1,8 @@
 .PHONY: test clean build prep fmt lint
 
-PACKAGES ?=$(shell $(GO) list ./...)
+PACKAGES ?=$(shell go list ./...)
 GOFILES := $(shell find . -name "*.go")
-TESTFOLDER := $(shell $(GO) list ./... | grep -E 'cmd$$')
+TESTFOLDER := $(shell go list ./... | grep -E 'cmd$$')
 VERSION := $(shell git describe --tags --abbrev=0)
 LDFLAGS := -ldflags '-s -w -X github.com/hrmsk66/terraformify/cmd.version=$(VERSION)'
 

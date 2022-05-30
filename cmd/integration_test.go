@@ -37,8 +37,8 @@ func cleanup() {
 
 // prep deploys a service that terraformify will import in the test
 func prep(t *testing.T, configFile string) (*terraform.Options, error) {
-	t.Log(cli.BoldGreenf("preparing for %s", t.Name()))
-	defer t.Log(cli.BoldGreenf("preparation completed for %s", t.Name()))
+	t.Logf("preparing for %s", t.Name())
+	defer t.Logf("preparation completed for %s", t.Name())
 
 	main, err := os.ReadFile("../testdata/" + configFile)
 	if err != nil {
