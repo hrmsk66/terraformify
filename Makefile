@@ -12,7 +12,7 @@ test:
 	done
 
 clean:
-	rm -r -f bin/*
+	rm -r -f dist/*
 
 build: clean
 	go build -trimpath $(LDFLAGS) -o dist/terraformify main.go
