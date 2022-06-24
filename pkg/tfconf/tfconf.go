@@ -32,14 +32,10 @@ type SensitiveAttr struct {
 }
 
 func Load(rawHCL string) (*TFConf, error) {
-	// "%" in log format conflicts with the HCL syntax.
-	// Escaping it with an extra `%` to workaround the parser error.
-	rawHCL = strings.ReplaceAll(rawHCL, "%{", "%%{")
-	// "terraform show" displays "(sensitive value)" for fieleds masked as sensitive, causing a parser error
-	// Replacing them with quoted literals to workaround
-	rawHCL = strings.ReplaceAll(rawHCL, " = (sensitive value)", ` = "(sensitive value)"`)
+	// Clean up rawHCL to prevent parser errors from occurring
+	t := cleanupHCL(rawHCL)
 
-	f, diags := hclwrite.ParseConfig([]byte(rawHCL), "", hcl.Pos{Line: 1, Column: 1})
+	f, diags := hclwrite.ParseConfig([]byte(t), "", hcl.Pos{Line: 1, Column: 1})
 	if diags.HasErrors() {
 		return nil, fmt.Errorf("errors: %s", diags)
 	}
