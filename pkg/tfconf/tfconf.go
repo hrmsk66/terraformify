@@ -171,6 +171,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 	body.RemoveAttribute("id")
 	body.RemoveAttribute("active_version")
 	body.RemoveAttribute("cloned_version")
+	body.RemoveAttribute("imported")
 
 	// If no service level comments are set, set blank
 	// Otherwise, Terraform will set `Managed by Terraform` and cause a configuration diff
