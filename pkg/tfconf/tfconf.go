@@ -211,6 +211,8 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 			nestedBody.RemoveAttribute("waf_id")
 		case "dynamicsnippet":
 			nestedBody.RemoveAttribute("snippet_id")
+		case "product_enablement":
+			nestedBody.RemoveAttribute("name")
 		case "request_setting":
 			// Get name from TFConf
 			name, err := getStringAttributeValue(block, "name")
