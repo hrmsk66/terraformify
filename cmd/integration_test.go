@@ -14,6 +14,7 @@ import (
 const domain = "test.terraformify.me"
 const prepDir = "tmfy-test-prep"
 const testDir = "tfmy-test"
+const packageFile = "package.tar.gz"
 
 func TestMain(m *testing.M) {
 	setup()
@@ -36,11 +37,11 @@ func cleanup() {
 }
 
 // prep deploys a service that terraformify will import in the test
-func prep(t *testing.T, configFile string) (*terraform.Options, error) {
+func prep(t *testing.T, files ...string) (*terraform.Options, error) {
 	t.Logf("preparing for %s", t.Name())
 	defer t.Logf("preparation completed for %s", t.Name())
 
-	main, err := os.ReadFile("../testdata/" + configFile)
+	main, err := os.ReadFile("../testdata/" + files[0])
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +61,20 @@ func prep(t *testing.T, configFile string) (*terraform.Options, error) {
 	if err := os.WriteFile(mainPath, main, 0644); err != nil {
 		return nil, err
 	}
+
+	// Copy C@E package file to the test directory
+	if len(files) == 2 {
+		pkg, err := os.ReadFile("../testdata/" + files[1])
+		if err != nil {
+			return nil, err
+		}
+
+		pkgPath := filepath.Join(prepDirPath, packageFile)
+		if err := os.WriteFile(pkgPath, pkg, 0644); err != nil {
+			return nil, err
+		}
+	}
+
 	opt := terraform.WithDefaultRetryableErrors(
 		t,
 		&terraform.Options{
@@ -69,6 +84,7 @@ func prep(t *testing.T, configFile string) (*terraform.Options, error) {
 			},
 		},
 	)
+
 	if _, err := terraform.InitAndApplyE(t, opt); err != nil {
 		return nil, err
 	}
@@ -78,21 +94,35 @@ func prep(t *testing.T, configFile string) (*terraform.Options, error) {
 // The test cases are not likely to be completed in 10 mins. Run with `-timeout 30m`
 func TestImportService(t *testing.T) {
 	testCases := []struct {
+		resourceType     string
 		name             string
 		expResourceCount int
 	}{
-		{"service_custom_vcl.tf", 1},
-		{"service_acl.tf", 3},
-		{"service_dictionary.tf", 3},
-		{"service_dynamic_snippet.tf", 3},
-		{"service_waf.tf", 2},
+		{"vcl", "service_custom_vcl.tf", 1},
+		{"vcl", "service_acl.tf", 3},
+		{"vcl", "service_dictionary.tf", 3},
+		{"vcl", "service_dynamic_snippet.tf", 3},
+		{"vcl", "service_waf.tf", 2},
+		{"compute", "service_compute.tf", 3},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			prepOpt, err := prep(t, tc.name)
-			if err != nil {
-				t.Errorf("Failed to set up a test service: %s", err)
+			var prepOpt *terraform.Options
+			var err error
+
+			if tc.resourceType == "vcl" {
+				prepOpt, err = prep(t, tc.name)
+				if err != nil {
+					t.Errorf("Failed to set up a test service: %s", err)
+				}
+			}
+
+			if tc.resourceType == "compute" {
+				prepOpt, err = prep(t, tc.name, packageFile)
+				if err != nil {
+					t.Errorf("Failed to set up a test service: %s", err)
+				}
 			}
 
 			// Create a working directory
@@ -106,13 +136,32 @@ func TestImportService(t *testing.T) {
 			serviceID := terraform.Output(t, prepOpt, "id")
 			c := cli.Config{
 				ID:           serviceID,
+				Package:      packageFile,
 				Directory:    testDirPath,
 				ForceDestroy: true,
 			}
 
-			// Run terraformify
-			if err = importService(c); err != nil {
-				t.Errorf("Failed to import the service: %s", err)
+			if tc.resourceType == "vcl" {
+				// Run terraformify
+				if err = importService(c); err != nil {
+					t.Errorf("Failed to import the service: %s", err)
+				}
+			}
+			if tc.resourceType == "compute" {
+				pkg, err := os.ReadFile("../testdata/" + packageFile)
+				if err != nil {
+					t.Errorf("Failed to read %s", packageFile)
+				}
+
+				pkgPath := filepath.Join(testDirPath, packageFile)
+				if err := os.WriteFile(pkgPath, pkg, 0644); err != nil {
+					t.Errorf("Failed to write %s", packageFile)
+				}
+
+				// Run terraformify
+				if err = importCompute(c); err != nil {
+					t.Errorf("Failed to import the service: %s", err)
+				}
 			}
 
 			// Run "terraform apply". add/change/destroy counts should all be 0

@@ -43,11 +43,11 @@ func Load(rawHCL string) (*TFConf, error) {
 	return &TFConf{f}, nil
 }
 
-func (tfconf *TFConf) ParseVCLServiceResource(serviceProp *prop.VCLServiceResource, c cli.Config) ([]prop.TFBlock, error) {
+func (tfconf *TFConf) ParseServiceResource(serviceProp prop.TFBlock, c cli.Config) ([]prop.TFBlock, error) {
 	// Check top-level blocks
 	blocks := tfconf.Body().Blocks()
 	if len(blocks) != 1 {
-		return nil, fmt.Errorf("tfconf: Number of VCLServiceResource should be 1, got %d", len(blocks))
+		return nil, fmt.Errorf("tfconf: Number of ServiceResource should be 1, got %d", len(blocks))
 	}
 	block := blocks[0]
 
@@ -113,7 +113,7 @@ func (tfconf *TFConf) ParseVCLServiceResource(serviceProp *prop.VCLServiceResour
 	return props, nil
 }
 
-func (tfconf *TFConf) RewriteResources(serviceProp *prop.VCLServiceResource, c cli.Config) ([]SensitiveAttr, error) {
+func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c cli.Config) ([]SensitiveAttr, error) {
 	// Read terraform.tfstate into the variable
 	state, err := tfstate.Load(c.Directory)
 	if err != nil {
@@ -124,11 +124,16 @@ func (tfconf *TFConf) RewriteResources(serviceProp *prop.VCLServiceResource, c c
 	// Read resource blocks
 	for _, block := range tfconf.Body().Blocks() {
 		if t := block.Type(); t != "resource" {
-			return nil, fmt.Errorf("Unexpected block type: %v\n", t)
+			return nil, fmt.Errorf("unexpected block type: %v", t)
 		}
 		switch block.Labels()[0] {
 		case "fastly_service_vcl":
 			sensitiveAttrs, err = rewriteVCLServiceResource(block, serviceProp, state, c)
+			if err != nil {
+				return nil, err
+			}
+		case "fastly_service_compute":
+			sensitiveAttrs, err = rewriteComputeServiceResource(block, serviceProp, state, c)
 			if err != nil {
 				return nil, err
 			}
@@ -158,7 +163,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp *prop.VCLServiceResource, c c
 	return sensitiveAttrs, nil
 }
 
-func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServiceResource, s *tfstate.TFState, c cli.Config) ([]SensitiveAttr, error) {
+func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) ([]SensitiveAttr, error) {
 	var sensitiveAttrs []SensitiveAttr
 
 	st, err := s.AddTemplate(tfstate.ServiceQueryTmplate)
@@ -214,6 +219,8 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 		case "product_enablement":
 			nestedBody.RemoveAttribute("name")
 		case "request_setting":
+			nestedBody.RemoveAttribute("geo_headers")
+
 			// Get name from TFConf
 			name, err := getStringAttributeValue(block, "name")
 			if err != nil {
@@ -222,6 +229,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
+				ResourceType:    serviceProp.GetType(),
 				ResourceName:    serviceProp.GetNormalizedName(),
 				NestedBlockName: blockType,
 				Name:            name,
@@ -246,6 +254,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
+				ResourceType:    serviceProp.GetType(),
 				ResourceName:    serviceProp.GetNormalizedName(),
 				NestedBlockName: blockType,
 				Name:            name,
@@ -274,6 +283,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
+				ResourceType:    serviceProp.GetType(),
 				ResourceName:    serviceProp.GetNormalizedName(),
 				NestedBlockName: blockType,
 				Name:            name,
@@ -302,6 +312,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
+				ResourceType:    serviceProp.GetType(),
 				ResourceName:    serviceProp.GetNormalizedName(),
 				NestedBlockName: blockType,
 				Name:            name,
@@ -331,6 +342,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 			keys := []string{"ssl_client_cert", "ssl_client_key"}
 			for _, k := range keys {
 				v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
+					ResourceType:    serviceProp.GetType(),
 					ResourceName:    serviceProp.GetNormalizedName(),
 					NestedBlockName: blockType,
 					Name:            name,
@@ -351,12 +363,18 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 				if err != nil {
 					return nil, err
 				}
+
 				format, err := st.ServiceQuery(tfstate.ServiceQueryParams{
+					ResourceType:    serviceProp.GetType(),
 					ResourceName:    serviceProp.GetNormalizedName(),
 					NestedBlockName: blockType,
 					Name:            name,
 					AttributeName:   "format",
 				})
+				if err != nil {
+					return nil, err
+				}
+
 				ext := "txt"
 				if json.Valid(format.Bytes()) {
 					ext = "json"
@@ -422,6 +440,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 				}
 				for _, k := range keys {
 					v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
+						ResourceType:    serviceProp.GetType(),
 						ResourceName:    serviceProp.GetNormalizedName(),
 						NestedBlockName: blockType,
 						Name:            name,
@@ -443,7 +462,164 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 	return sensitiveAttrs, nil
 }
 
-func rewriteACLResource(block *hclwrite.Block, serviceProp *prop.VCLServiceResource, s *tfstate.TFState, c cli.Config) error {
+func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) ([]SensitiveAttr, error) {
+	var sensitiveAttrs []SensitiveAttr
+
+	st, err := s.AddTemplate(tfstate.ServiceQueryTmplate)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove read-only attributes
+	body := block.Body()
+	body.RemoveAttribute("id")
+	body.RemoveAttribute("active_version")
+	body.RemoveAttribute("cloned_version")
+	body.RemoveAttribute("imported")
+	body.RemoveAttribute("force_refresh")
+
+	// If no service level comments are set, set blank
+	// Otherwise, Terraform will set `Managed by Terraform` and cause a configuration diff
+	comment, err := getStringAttributeValue(block, "comment")
+	if err != nil {
+		if !errors.Is(err, ErrAttrNotFound) {
+			return nil, err
+		}
+
+		if comment == "" {
+			body.SetAttributeValue("comment", cty.StringVal(""))
+		}
+	}
+
+	if c.ForceDestroy {
+		body.AppendNewline()
+		body.SetAttributeValue("force_destroy", cty.BoolVal(true))
+	}
+
+	for _, block := range body.Blocks() {
+		blockType := block.Type()
+		nestedBody := block.Body()
+
+		switch blockType {
+		case "dictionary":
+			nestedBody.RemoveAttribute("dictionary_id")
+			if c.ForceDestroy {
+				nestedBody.SetAttributeValue("force_destroy", cty.BoolVal(true))
+			}
+		case "product_enablement":
+			nestedBody.RemoveAttribute("name")
+		case "package":
+			nestedBody.SetAttributeValue("filename", cty.StringVal(c.Package))
+
+			tokens := buildFilesha512Function(c.Package)
+			nestedBody.SetAttributeRaw("source_code_hash", tokens)
+		case "backend":
+			name, err := getStringAttributeValue(block, "name")
+			if err != nil {
+				return nil, err
+			}
+
+			// Handling sensitive attrs
+			keys := []string{"ssl_client_cert", "ssl_client_key"}
+			for _, k := range keys {
+				v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
+					ResourceType:    serviceProp.GetType(),
+					ResourceName:    serviceProp.GetNormalizedName(),
+					NestedBlockName: blockType,
+					Name:            name,
+					AttributeName:   k,
+				})
+				if err != nil {
+					return nil, err
+				}
+				if v.String() != "" {
+					varName := naming.Normalize(name) + "_" + k
+					nestedBody.SetAttributeTraversal(k, buildVariableRef(varName))
+					sensitiveAttrs = append(sensitiveAttrs, SensitiveAttr{blockType, varName, v.String()})
+				}
+			}
+		default:
+			if strings.HasPrefix(blockType, "logging_") {
+				name, err := getStringAttributeValue(block, "name")
+				if err != nil {
+					return nil, err
+				}
+
+				// Handling sensitive attrs
+				var keys []string
+				switch blockType {
+				case "logging_bigquery":
+					keys = []string{"email", "secret_key"}
+				case "logging_blobstorage":
+					keys = []string{"sas_token"}
+				case "logging_cloudfiles":
+					keys = []string{"access_key"}
+				case "logging_datadog":
+					keys = []string{"token"}
+				case "logging_digitalocean":
+					keys = []string{"access_key", "secret_key"}
+				case "logging_elasticsearch":
+					keys = []string{"password", "tls_client_key"}
+				case "logging_ftp":
+					keys = []string{"password"}
+				case "logging_gcs":
+					keys = []string{"secret_key"}
+				case "logging_googlepubsub":
+					keys = []string{"secret_key"}
+				case "logging_heroku":
+					keys = []string{"token"}
+				case "logging_honeycomb":
+					keys = []string{"token"}
+				case "logging_https":
+					keys = []string{"tls_client_key"}
+				case "logging_kafka":
+					keys = []string{"password", "tls_client_key"}
+				case "logging_kinesis":
+					keys = []string{"access_key", "secret_key"}
+				case "logging_loggly":
+					keys = []string{"token"}
+				case "logging_logshuttle":
+					keys = []string{"token"}
+				case "logging_newrelic":
+					keys = []string{"token"}
+				case "logging_openstack":
+					keys = []string{"access_key"}
+				case "logging_s3":
+					keys = []string{"s3_access_key", "s3_secret_key"}
+				case "logging_scalyr":
+					keys = []string{"token"}
+				case "logging_sftp":
+					keys = []string{"password", "secret_key"}
+				case "logging_splunk":
+					keys = []string{"tls_client_key", "token"}
+				case "logging_syslog":
+					keys = []string{"tls_client_key"}
+				}
+				for _, k := range keys {
+					v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
+						ResourceType:    serviceProp.GetType(),
+						ResourceName:    serviceProp.GetNormalizedName(),
+						NestedBlockName: blockType,
+						Name:            name,
+						AttributeName:   k,
+					})
+					if err != nil {
+						return nil, err
+					}
+
+					// the attribute names for under "logging_s3" are redundant. Removing the prefix "s3_" in the variable names
+					varName := naming.Normalize(name) + "_" + strings.TrimPrefix(k, "s3_")
+					nestedBody.SetAttributeTraversal(k, buildVariableRef(varName))
+					sensitiveAttrs = append(sensitiveAttrs, SensitiveAttr{blockType, varName, v.String()})
+				}
+			}
+		}
+	}
+
+	return sensitiveAttrs, nil
+}
+
+func rewriteACLResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) error {
 	if err := rewriteCommonAttributes(block, serviceProp, s, c); err != nil {
 		return err
 	}
@@ -454,7 +630,7 @@ func rewriteACLResource(block *hclwrite.Block, serviceProp *prop.VCLServiceResou
 		t := block.Type()
 		nb := block.Body()
 		if t != "entry" {
-			return fmt.Errorf("Unexpected Terraform block: %#v", block)
+			return fmt.Errorf("unexpected Terraform block: %#v", block)
 		}
 		nb.RemoveAttribute("id")
 	}
@@ -466,7 +642,7 @@ func rewriteACLResource(block *hclwrite.Block, serviceProp *prop.VCLServiceResou
 	return nil
 }
 
-func rewriteDictionaryResource(block *hclwrite.Block, serviceProp *prop.VCLServiceResource, s *tfstate.TFState, c cli.Config) error {
+func rewriteDictionaryResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) error {
 	if err := rewriteCommonAttributes(block, serviceProp, s, c); err != nil {
 		return err
 	}
@@ -479,7 +655,7 @@ func rewriteDictionaryResource(block *hclwrite.Block, serviceProp *prop.VCLServi
 	return nil
 }
 
-func rewriteDynamicSnippetResource(block *hclwrite.Block, serviceProp *prop.VCLServiceResource, s *tfstate.TFState, c cli.Config) error {
+func rewriteDynamicSnippetResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) error {
 	if err := rewriteCommonAttributes(block, serviceProp, s, c); err != nil {
 		return err
 	}
@@ -518,7 +694,7 @@ func rewriteDynamicSnippetResource(block *hclwrite.Block, serviceProp *prop.VCLS
 	return nil
 }
 
-func rewriteCommonAttributes(block *hclwrite.Block, serviceProp *prop.VCLServiceResource, s *tfstate.TFState, c cli.Config) error {
+func rewriteCommonAttributes(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) error {
 	var idName, attrName string
 	switch block.Labels()[0] {
 	case "fastly_service_dynamic_snippet_content":
@@ -542,6 +718,7 @@ func rewriteCommonAttributes(block *hclwrite.Block, serviceProp *prop.VCLService
 		return err
 	}
 	name, err := st.ResourceNameQuery(tfstate.ResourceNameQueryParams{
+		ResourceType:    serviceProp.GetType(),
 		NestedBlockName: attrName,
 		IDName:          idName,
 		ID:              id,
@@ -554,7 +731,7 @@ func rewriteCommonAttributes(block *hclwrite.Block, serviceProp *prop.VCLService
 
 	// Add for_each to the resource block
 	body.AppendNewline()
-	tokens := buildForEach(attrName, name.String())
+	tokens := buildForEach(serviceProp, attrName, name.String())
 	body.SetAttributeRaw("for_each", tokens)
 
 	// Setting the resource ID (acl_id, dictionary_id, snippet_id)
@@ -571,7 +748,7 @@ func rewriteCommonAttributes(block *hclwrite.Block, serviceProp *prop.VCLService
 	return nil
 }
 
-func rewriteWAFResource(block *hclwrite.Block, serviceProp *prop.VCLServiceResource) error {
+func rewriteWAFResource(block *hclwrite.Block, serviceProp prop.TFBlock) error {
 	body := block.Body()
 	// remove read-only attributes
 	body.RemoveAttribute("active")
@@ -614,6 +791,17 @@ func getStringAttributeValue(block *hclwrite.Block, attrKey string) (string, err
 	return value, nil
 }
 
+func buildFilesha512Function(path string) hclwrite.Tokens {
+	return hclwrite.Tokens{
+		{Type: hclsyntax.TokenIdent, Bytes: []byte("filesha512")},
+		{Type: hclsyntax.TokenOParen, Bytes: []byte{'('}},
+		{Type: hclsyntax.TokenOQuote, Bytes: []byte{'"'}},
+		{Type: hclsyntax.TokenQuotedLit, Bytes: []byte(path)},
+		{Type: hclsyntax.TokenCQuote, Bytes: []byte{'"'}},
+		{Type: hclsyntax.TokenCParen, Bytes: []byte{')'}},
+	}
+}
+
 func buildFileFunction(path string) hclwrite.Tokens {
 	return hclwrite.Tokens{
 		{Type: hclsyntax.TokenIdent, Bytes: []byte("file")},
@@ -625,14 +813,14 @@ func buildFileFunction(path string) hclwrite.Tokens {
 	}
 }
 
-func buildForEach(resourceType, name string) hclwrite.Tokens {
+func buildForEach(serviceProp prop.TFBlock, resourceType, name string) hclwrite.Tokens {
 	return hclwrite.Tokens{
 		{Type: hclsyntax.TokenOBrace, Bytes: []byte{'{'}, SpacesBefore: 1},
 		{Type: hclsyntax.TokenNewline, Bytes: []byte("\n"), SpacesBefore: 0},
 		{Type: hclsyntax.TokenIdent, Bytes: []byte("for"), SpacesBefore: 2},
 		{Type: hclsyntax.TokenIdent, Bytes: []byte{resourceType[0]}, SpacesBefore: 1},
 		{Type: hclsyntax.TokenIdent, Bytes: []byte("in"), SpacesBefore: 1},
-		{Type: hclsyntax.TokenIdent, Bytes: []byte("fastly_service_vcl"), SpacesBefore: 1},
+		{Type: hclsyntax.TokenIdent, Bytes: []byte(serviceProp.GetType()), SpacesBefore: 1},
 		{Type: hclsyntax.TokenDot, Bytes: []byte{'.'}, SpacesBefore: 0},
 		{Type: hclsyntax.TokenIdent, Bytes: []byte("service"), SpacesBefore: 0},
 		{Type: hclsyntax.TokenDot, Bytes: []byte{'.'}, SpacesBefore: 0},
@@ -664,7 +852,7 @@ func buildForEachIDRef(idName string) hcl.Traversal {
 	}
 }
 
-func buildServiceIDRef(serviceProp *prop.VCLServiceResource) hcl.Traversal {
+func buildServiceIDRef(serviceProp prop.TFBlock) hcl.Traversal {
 	return hcl.Traversal{
 		hcl.TraverseRoot{Name: serviceProp.GetType()},
 		hcl.TraverseAttr{Name: serviceProp.GetNormalizedName()},

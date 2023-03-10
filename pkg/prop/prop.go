@@ -15,6 +15,48 @@ type TFBlock interface {
 	GetRef() string
 }
 
+type ComputeServiceResource struct {
+	ID            string
+	Name          string
+	TargetVersion int
+}
+
+func NewComputeServiceResource(id, name string, targetVersion int) *ComputeServiceResource {
+	return &ComputeServiceResource{
+		ID:            id,
+		Name:          name,
+		TargetVersion: targetVersion,
+	}
+}
+func (c *ComputeServiceResource) GetType() string {
+	return "fastly_service_compute"
+}
+func (c *ComputeServiceResource) GetID() string {
+	return c.ID
+}
+func (c *ComputeServiceResource) GetIDforTFImport() string {
+	if c.TargetVersion != 0 {
+		return c.GetID() + "@" + strconv.Itoa(c.TargetVersion)
+	}
+	return c.GetID()
+}
+func (c *ComputeServiceResource) GetName() string {
+	return c.Name
+}
+func (c *ComputeServiceResource) GetNormalizedName() string {
+	// Check if the name can be used as a Terraform resource name
+	// If not, falling back to the default resource name
+	name := naming.Normalize(c.GetName())
+
+	if !naming.IsValid(name) {
+		name = "service"
+	}
+	return name
+}
+func (c *ComputeServiceResource) GetRef() string {
+	return c.GetType() + "." + c.GetNormalizedName()
+}
+
 type VCLServiceResource struct {
 	ID            string
 	Name          string
@@ -58,16 +100,16 @@ func (v *VCLServiceResource) GetRef() string {
 }
 
 type WAFResource struct {
-	*VCLServiceResource
-	ID   string
-	Name string
+	ServiceResource TFBlock
+	ID              string
+	Name            string
 }
 
-func NewWAFResource(id string, sr *VCLServiceResource) *WAFResource {
+func NewWAFResource(id string, sr TFBlock) *WAFResource {
 	return &WAFResource{
-		VCLServiceResource: sr,
-		ID:                 id,
-		Name:               "waf",
+		ServiceResource: sr,
+		ID:              id,
+		Name:            "waf",
 	}
 }
 func (w *WAFResource) GetType() string {
@@ -90,17 +132,17 @@ func (w *WAFResource) GetRef() string {
 }
 
 type ACLResource struct {
-	*VCLServiceResource
-	ID   string
-	Name string
-	No   int
+	ServiceResource TFBlock
+	ID              string
+	Name            string
+	No              int
 }
 
-func NewACLResource(id, name string, sr *VCLServiceResource) *ACLResource {
+func NewACLResource(id, name string, sr TFBlock) *ACLResource {
 	return &ACLResource{
-		VCLServiceResource: sr,
-		ID:                 id,
-		Name:               name,
+		ServiceResource: sr,
+		ID:              id,
+		Name:            name,
 	}
 }
 func (a *ACLResource) GetType() string {
@@ -110,7 +152,7 @@ func (a *ACLResource) GetID() string {
 	return a.ID
 }
 func (a *ACLResource) GetIDforTFImport() string {
-	return a.VCLServiceResource.GetID() + "/" + a.ID
+	return a.ServiceResource.GetID() + "/" + a.ID
 }
 func (a *ACLResource) GetName() string {
 	return a.Name
@@ -123,16 +165,16 @@ func (a *ACLResource) GetRef() string {
 }
 
 type DictionaryResource struct {
-	*VCLServiceResource
-	ID   string
-	Name string
+	ServiceResource TFBlock
+	ID              string
+	Name            string
 }
 
-func NewDictionaryResource(id, name string, sr *VCLServiceResource) *DictionaryResource {
+func NewDictionaryResource(id, name string, sr TFBlock) *DictionaryResource {
 	return &DictionaryResource{
-		VCLServiceResource: sr,
-		ID:                 id,
-		Name:               name,
+		ServiceResource: sr,
+		ID:              id,
+		Name:            name,
 	}
 }
 func (d *DictionaryResource) GetType() string {
@@ -142,7 +184,7 @@ func (d *DictionaryResource) GetID() string {
 	return d.ID
 }
 func (d *DictionaryResource) GetIDforTFImport() string {
-	return d.VCLServiceResource.GetID() + "/" + d.ID
+	return d.ServiceResource.GetID() + "/" + d.ID
 }
 func (d *DictionaryResource) GetName() string {
 	return d.Name
@@ -155,16 +197,16 @@ func (d *DictionaryResource) GetRef() string {
 }
 
 type DynamicSnippetResource struct {
-	*VCLServiceResource
-	ID   string
-	Name string
+	ServiceResource TFBlock
+	ID              string
+	Name            string
 }
 
-func NewDynamicSnippetResource(id, name string, sr *VCLServiceResource) *DynamicSnippetResource {
+func NewDynamicSnippetResource(id, name string, sr TFBlock) *DynamicSnippetResource {
 	return &DynamicSnippetResource{
-		VCLServiceResource: sr,
-		ID:                 id,
-		Name:               name,
+		ServiceResource: sr,
+		ID:              id,
+		Name:            name,
 	}
 }
 func (ds *DynamicSnippetResource) GetType() string {
@@ -174,7 +216,7 @@ func (ds *DynamicSnippetResource) GetID() string {
 	return ds.ID
 }
 func (ds *DynamicSnippetResource) GetIDforTFImport() string {
-	return ds.VCLServiceResource.GetID() + "/" + ds.ID
+	return ds.ServiceResource.GetID() + "/" + ds.ID
 }
 func (ds *DynamicSnippetResource) GetName() string {
 	return ds.Name

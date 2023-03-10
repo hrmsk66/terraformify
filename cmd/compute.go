@@ -16,11 +16,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-// serviceCmd represents the service command
-var serviceCmd = &cobra.Command{
-	Use:          "service <service-id>",
-	Short:        "Generate TF files for an existing Fastly VCL service",
-	Args:         cobra.ExactArgs(1),
+// computeCmd represents the service command
+var computeCmd = &cobra.Command{
+	Use:          "compute <service-id> <path-to-package>",
+	Short:        "Generate TF files for an existing Fastly compute service",
+	Args:         cobra.ExactArgs(2),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filter := cli.CreateLogFilter()
@@ -64,6 +64,7 @@ var serviceCmd = &cobra.Command{
 		}
 		c := cli.Config{
 			ID:            args[0],
+			Package:       args[1],
 			Version:       version,
 			Directory:     workingDir,
 			Interactive:   interactive,
@@ -72,20 +73,20 @@ var serviceCmd = &cobra.Command{
 			SkipEditState: skipEditState,
 		}
 
-		return importService(c)
+		return importCompute(c)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(serviceCmd)
+	rootCmd.AddCommand(computeCmd)
 
 	// Persistent flags
-	serviceCmd.PersistentFlags().IntP("version", "v", 0, "Version of the service to be imported")
-	serviceCmd.PersistentFlags().BoolP("manage-all", "m", false, "Manage all associated resources")
-	serviceCmd.PersistentFlags().BoolP("force-destroy", "f", false, "Set force-destroy to true for the service and associated resources")
+	computeCmd.PersistentFlags().IntP("version", "v", 0, "Version of the service to be imported")
+	computeCmd.PersistentFlags().BoolP("manage-all", "m", false, "Manage all associated resources")
+	computeCmd.PersistentFlags().BoolP("force-destroy", "f", false, "Set force-destroy to true for the service and associated resources")
 }
 
-func importService(c cli.Config) error {
+func importCompute(c cli.Config) error {
 	log.Printf("[INFO] Initializing Terraform")
 	// Find/Install Terraform binary
 	tf, err := terraform.FindExec(c.Directory)
@@ -116,7 +117,7 @@ func importService(c cli.Config) error {
 	}
 
 	// Create VCLServiceResourceProp struct
-	serviceProp := prop.NewVCLServiceResource(c.ID, "service", c.Version)
+	serviceProp := prop.NewComputeServiceResource(c.ID, "service", c.Version)
 
 	// log.Printf(`[INFO] Running "terraform import %s %s"`, serviceProp.GetRef(), serviceProp.GetIDforTFImport())
 	log.Printf(`[INFO] Running "terraform import" on %s`, serviceProp.GetRef())
@@ -236,6 +237,15 @@ func importService(c cli.Config) error {
 			return err
 		}
 
+		log.Printf(`[INFO] Inserting "filename: %s" in terraform.tfstate`, c.Package)
+		newState, err = newState.SetPackageFilename(tfstate.SetPackageFilenameParams{
+			ResourceType:    serviceProp.GetType(),
+			PackageFilename: c.Package,
+		})
+		if err != nil {
+			return err
+		}
+
 		if c.ManageAll {
 			log.Print(`[INFO] Settting "manage_*" in terraform.tfstate`)
 			newState, err = newState.SetManageAttributes()
@@ -253,6 +263,7 @@ func importService(c cli.Config) error {
 				return err
 			}
 		}
+		log.Print(`[INFO] Done force_destroy`)
 
 		for _, p := range props {
 			switch p := p.(type) {
@@ -268,6 +279,7 @@ func importService(c cli.Config) error {
 				}
 			}
 		}
+		log.Print(`[INFO] Done index_key`)
 
 		if len(sensitiveAttrs) > 0 {
 			log.Print(`[INFO] Inserting items in "sensitive_attributes" in terraform.tfstate`)

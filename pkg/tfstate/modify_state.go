@@ -6,18 +6,28 @@ import (
 )
 
 // query and query templates for gojq
-const setActivate = `(.resources[] | select(.type == "fastly_service_vcl" or .type == "fastly_service_waf_configuration") | .instances[].attributes.activate) |= true`
+const setActivate = `(.resources[] | select(.type == "fastly_service_vcl" or .type == "fastly_service_compute" or .type == "fastly_service_waf_configuration") | .instances[].attributes.activate) |= true`
 const setIndexKeyTmplate = `(.resources[] | select(.type == "{{.ResourceType}}") | select(.name == "{{.ResourceName}}") | .instances[]) += {index_key: "{{.Name}}"}`
 const setSensitiveAttributeTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].sensitive_attributes) += [[{type: "get_attr", value: "{{.BlockType}}"}]]`
 const setManageAttributeTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].attributes.{{.AttributeName}}) |= true`
-const setServiceForceDestroy = `(.resources[] | select(.type == "fastly_service_vcl") | .instances[].attributes.force_destroy) |= true`
-const setACLForceDestroy = `(.resources[] | select(.type == "fastly_service_vcl") | .instances[].attributes | .acl[].force_destroy) |= true`
-const setDictionaryForceDestroy = `(.resources[] | select(.type == "fastly_service_vcl") | .instances[].attributes | .dictionary[].force_destroy) |= true`
+const setServiceForceDestroyTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].attributes.force_destroy) |= true`
+const setACLForceDestroyTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].attributes | .acl[].force_destroy) |= true`
+const setDictionaryForceDestroyTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].attributes | .dictionary[].force_destroy) |= true`
+const setPackageFilenameTemplate = `(.resources[] | select(.type == "{{.ResourceType}}") | .instances[].attributes.package[]) += {filename: "{{.PackageFilename}}"}`
+
+type SetForceDestroyParams struct {
+	ResourceType string
+}
 
 type SetIndexKeyParams struct {
 	ResourceType string
 	ResourceName string
 	Name         string
+}
+
+type SetPackageFilenameParams struct {
+	ResourceType    string
+	PackageFilename string
 }
 
 type setSensitiveAttributeParams struct {
@@ -43,11 +53,7 @@ func (s *TFState) SetIndexKey(param SetIndexKeyParams) (*TFState, error) {
 		return nil, err
 	}
 
-	err = st.Execute(&q, SetIndexKeyParams{
-		ResourceType: param.ResourceType,
-		ResourceName: param.ResourceName,
-		Name:         param.Name,
-	})
+	err = st.Execute(&q, param)
 	if err != nil {
 		return nil, fmt.Errorf("tfstate: invalid params: %w", err)
 	}
@@ -55,7 +61,23 @@ func (s *TFState) SetIndexKey(param SetIndexKeyParams) (*TFState, error) {
 	return st.TFState.Query(q.String())
 }
 
-func (s *TFState) SetSensitiveAttributes(blockTypes map[string]struct{}) (*TFState, error) {
+func (s *TFState) SetPackageFilename(param SetPackageFilenameParams) (*TFState, error) {
+	var q bytes.Buffer
+
+	st, err := s.AddTemplate(setPackageFilenameTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	err = st.Execute(&q, param)
+	if err != nil {
+		return nil, fmt.Errorf("tfstate: invalid params: %w", err)
+	}
+
+	return st.TFState.Query(q.String())
+}
+
+func (s *TFState) SetSensitiveAttributes(resourceType string, blockTypes map[string]struct{}) (*TFState, error) {
 	for blockType := range blockTypes {
 		var q bytes.Buffer
 
@@ -65,7 +87,7 @@ func (s *TFState) SetSensitiveAttributes(blockTypes map[string]struct{}) (*TFSta
 		}
 
 		err = st.Execute(&q, setSensitiveAttributeParams{
-			ResourceType: "fastly_service_vcl",
+			ResourceType: resourceType,
 			BlockType:    blockType,
 		})
 
@@ -111,14 +133,50 @@ func (s *TFState) SetManageAttributes() (*TFState, error) {
 	return s, nil
 }
 
-func (s *TFState) SetForceDestroy() (*TFState, error) {
-	s, err := s.Query(setServiceForceDestroy)
+func (s *TFState) SetForceDestroy(param SetForceDestroyParams) (*TFState, error) {
+	var q bytes.Buffer
+	st, err := s.AddTemplate(setServiceForceDestroyTemplate)
 	if err != nil {
 		return nil, err
 	}
-	s, err = s.Query(setACLForceDestroy)
+	err = st.Execute(&q, param)
+	if err != nil {
+		return nil, fmt.Errorf("tfstate: invalid params: %w", err)
+	}
+	s, err = st.TFState.Query(q.String())
 	if err != nil {
 		return nil, err
 	}
-	return s.Query(setDictionaryForceDestroy)
+
+	q.Reset()
+	st, err = s.AddTemplate(setDictionaryForceDestroyTemplate)
+	if err != nil {
+		return nil, err
+	}
+	err = st.Execute(&q, param)
+	if err != nil {
+		return nil, fmt.Errorf("tfstate: invalid params: %w", err)
+	}
+	s, err = st.TFState.Query(q.String())
+	if err != nil {
+		return nil, err
+	}
+
+	if param.ResourceType == "fastly_service_vcl" {
+		q.Reset()
+		st, err = s.AddTemplate(setACLForceDestroyTemplate)
+		if err != nil {
+			return nil, err
+		}
+		err = st.Execute(&q, param)
+		if err != nil {
+			return nil, fmt.Errorf("tfstate: invalid params: %w", err)
+		}
+		s, err = st.TFState.Query(q.String())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return s, nil
 }

@@ -4,7 +4,7 @@ An experimental CLI that generates TF files to manage existing Fastly services w
 
 https://user-images.githubusercontent.com/30490956/169726673-33ecccf7-ae40-4ebd-acf7-e4d457d4f510.mp4
 
-## Installation
+## Installation / Upgrade
 
 ```
 go install github.com/hrmsk66/terraformify@latest
@@ -24,9 +24,18 @@ Choose one of the following options to give terraformify access to your API toke
 
 Run the command in an empty directory
 
+### Import VCL service
+
 ```
 mkdir test && cd test
 terraformify service <service-id>
+```
+
+### Import Compute@Edge service
+
+```
+mkdir test && cd test
+terraformify compute <service-id> <path-to-package>
 ```
 
 ### Interactive mode
