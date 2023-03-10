@@ -28,16 +28,16 @@ Run the command in an empty directory
 
 ```
 mkdir test && cd test
-terraformify service <service-id>
+terraformify service vcl <service-id>
 ```
 
 ### Import Compute@Edge service
 
-To import compute@Edge services, the path to the WASM package must be specified as an argument in addition to the service ID.
+To import compute@Edge services, the path to the WASM package is used as an argument in addition to the service ID.
 
 ```
 mkdir test && cd test
-terraformify compute <service-id> <path-to-package>
+terraformify service compute <service-id> <path-to-package>
 ```
 
 ### Interactive mode
