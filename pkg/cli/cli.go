@@ -15,6 +15,7 @@ import (
 
 type Config struct {
 	ID            string
+	Package       string
 	Version       int
 	Directory     string
 	Interactive   bool

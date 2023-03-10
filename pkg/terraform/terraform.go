@@ -2,39 +2,20 @@ package terraform
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os/exec"
 	"runtime"
 
-	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/hc-install/product"
-	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hrmsk66/terraformify/pkg/prop"
 )
 
-const tfVersion = "1.1.9"
-
-func Install(workingDir string) (*tfexec.Terraform, error) {
+func FindExec(workingDir string) (*tfexec.Terraform, error) {
 	execPath, err := exec.LookPath("terraform")
 	if err != nil {
-		if !errors.Is(err, exec.ErrNotFound) {
-			return nil, fmt.Errorf("unknown error when looking for Terraform binaries: %w", err)
-		}
-
-		// Install Terraform
-		installer := &releases.ExactVersion{
-			Product: product.Terraform,
-			Version: version.Must(version.NewVersion(tfVersion)),
-		}
-
-		execPath, err = installer.Install(context.Background())
-		if err != nil {
-			return nil, fmt.Errorf("error installing Terraform: %w", err)
-		}
+		return nil, err
 	}
 
 	return tfexec.NewTerraform(workingDir, execPath)

@@ -6,11 +6,12 @@ import (
 )
 
 // query templates for gojq
-const ServiceQueryTmplate = `.resources[] | select(.name == "{{.ResourceName}}") | .instances[].attributes.{{.NestedBlockName}}[] | select(.name == "{{.Name}}") | .{{.AttributeName}}`
-const DsnippetQueryTmplate = `.resources[] | select(.name == "{{.ResourceName}}") | .instances[].attributes.content`
-const ResourceNameQueryTmplate = `.resources[] | select(.type == "fastly_service_vcl") | .instances[].attributes.{{.NestedBlockName}}[] | select(.{{.IDName}} == "{{.ID}}") | .name`
+const ServiceQueryTmplate = `.resources[] | select(.type == "{{.ResourceType}}") | select(.name == "{{.ResourceName}}") | .instances[].attributes.{{.NestedBlockName}}[] | select(.name == "{{.Name}}") | .{{.AttributeName}}`
+const DsnippetQueryTmplate = `.resources[] | select(.type == "fastly_service_dynamic_snippet_content") | select(.name == "{{.ResourceName}}") | .instances[].attributes.content`
+const ResourceNameQueryTmplate = `.resources[] | select(.type == "{{.ResourceType}}") | .instances[].attributes.{{.NestedBlockName}}[] | select(.{{.IDName}} == "{{.ID}}") | .name`
 
 type ServiceQueryParams struct {
+	ResourceType    string
 	ResourceName    string
 	NestedBlockName string
 	Name            string
@@ -22,6 +23,7 @@ type DSnippetQueryParams struct {
 }
 
 type ResourceNameQueryParams struct {
+	ResourceType    string
 	NestedBlockName string
 	IDName          string
 	ID              string
