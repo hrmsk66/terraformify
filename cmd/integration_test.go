@@ -143,7 +143,7 @@ func TestImportService(t *testing.T) {
 
 			if tc.resourceType == "vcl" {
 				// Run terraformify
-				if err = importService(c); err != nil {
+				if err = importVCL(c); err != nil {
 					t.Errorf("Failed to import the service: %s", err)
 				}
 			}

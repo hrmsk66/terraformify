@@ -16,11 +16,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-// computeCmd represents the service command
-var computeCmd = &cobra.Command{
-	Use:          "compute <service-id> <path-to-package>",
-	Short:        "Generate TF files for an existing Fastly C@E service",
-	Args:         cobra.ExactArgs(2),
+// vclCmd represents the service command
+var vclCmd = &cobra.Command{
+	Use:          "vcl <service-id>",
+	Short:        "Generate TF files for an existing Fastly VCL service",
+	Args:         cobra.ExactArgs(1),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filter := cli.CreateLogFilter()
@@ -64,7 +64,6 @@ var computeCmd = &cobra.Command{
 		}
 		c := cli.Config{
 			ID:            args[0],
-			Package:       args[1],
 			Version:       version,
 			Directory:     workingDir,
 			Interactive:   interactive,
@@ -73,15 +72,15 @@ var computeCmd = &cobra.Command{
 			SkipEditState: skipEditState,
 		}
 
-		return importCompute(c)
+		return importVCL(c)
 	},
 }
 
 func init() {
-	serviceCmd.AddCommand(computeCmd)
+	serviceCmd.AddCommand(vclCmd)
 }
 
-func importCompute(c cli.Config) error {
+func importVCL(c cli.Config) error {
 	log.Printf("[INFO] Initializing Terraform")
 	// Find/Install Terraform binary
 	tf, err := terraform.FindExec(c.Directory)
@@ -112,7 +111,7 @@ func importCompute(c cli.Config) error {
 	}
 
 	// Create VCLServiceResourceProp struct
-	serviceProp := prop.NewComputeServiceResource(c.ID, "service", c.Version)
+	serviceProp := prop.NewVCLServiceResource(c.ID, "service", c.Version)
 
 	// log.Printf(`[INFO] Running "terraform import %s %s"`, serviceProp.GetRef(), serviceProp.GetIDforTFImport())
 	log.Printf(`[INFO] Running "terraform import" on %s`, serviceProp.GetRef())
@@ -232,15 +231,6 @@ func importCompute(c cli.Config) error {
 			return err
 		}
 
-		log.Printf(`[INFO] Inserting "filename: %s" in terraform.tfstate`, c.Package)
-		newState, err = newState.SetPackageFilename(tfstate.SetPackageFilenameParams{
-			ResourceType:    serviceProp.GetType(),
-			PackageFilename: c.Package,
-		})
-		if err != nil {
-			return err
-		}
-
 		if c.ManageAll {
 			log.Print(`[INFO] Settting "manage_*" in terraform.tfstate`)
 			newState, err = newState.SetManageAttributes()
@@ -258,7 +248,6 @@ func importCompute(c cli.Config) error {
 				return err
 			}
 		}
-		log.Print(`[INFO] Done force_destroy`)
 
 		for _, p := range props {
 			switch p := p.(type) {
@@ -274,7 +263,6 @@ func importCompute(c cli.Config) error {
 				}
 			}
 		}
-		log.Print(`[INFO] Done index_key`)
 
 		if len(sensitiveAttrs) > 0 {
 			log.Print(`[INFO] Inserting items in "sensitive_attributes" in terraform.tfstate`)
