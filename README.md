@@ -33,6 +33,8 @@ terraformify service <service-id>
 
 ### Import Compute@Edge service
 
+To import compute@Edge services, the path to the WASM package must be specified as an argument in addition to the service ID.
+
 ```
 mkdir test && cd test
 terraformify compute <service-id> <path-to-package>
