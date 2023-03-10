@@ -3,7 +3,7 @@ variable "domain" {
 }
 
 resource "fastly_service_compute" "service" {
-  name               = var.domain
+  name = var.domain
 
   domain {
     name = var.domain
@@ -28,10 +28,10 @@ resource "fastly_service_compute" "service" {
   }
 
   dictionary {
-    name          = "dict1"
+    name = "dict1"
   }
   dictionary {
-    name          = "dict2"
+    name = "dict2"
   }
 
   logging_s3 {
