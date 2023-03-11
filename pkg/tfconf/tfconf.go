@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/hashicorp/hcl/v2"
+	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/hrmsk66/terraformify/pkg/cli"
@@ -157,7 +157,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if id != c.ID {
-				tfconf.Body().RemoveBlock(block)
+				tfconf.File.Body().RemoveBlock(block)
 				continue
 			}
 
@@ -171,7 +171,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if id != c.WafID {
-				tfconf.Body().RemoveBlock(block)
+				tfconf.File.Body().RemoveBlock(block)
 				continue
 			}
 
@@ -185,7 +185,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if sid != c.ID {
-				tfconf.Body().RemoveBlock(block)
+				tfconf.File.Body().RemoveBlock(block)
 				continue
 			}
 
@@ -199,7 +199,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if sid != c.ID {
-				tfconf.Body().RemoveBlock(block)
+				tfconf.File.Body().RemoveBlock(block)
 				continue
 			}
 
@@ -213,7 +213,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if sid != c.ID {
-				tfconf.Body().RemoveBlock(block)
+				tfconf.File.Body().RemoveBlock(block)
 				continue
 			}
 
