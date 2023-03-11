@@ -1,4 +1,4 @@
-.PHONY: test clean build fmt
+.PHONY: test clean build fmt lint prep
 
 GOFILES := $(shell find . -name "*.go")
 VERSION := $(shell git describe --tags --abbrev=0)
@@ -15,3 +15,8 @@ build: clean
 
 fmt:
 	gofmt -s -w $(GOFILES)
+
+lint:
+	golangci-lint run
+
+prep: fmt lint
