@@ -29,13 +29,15 @@ func (s *TFState) AddTemplate(tmpl string) (*TFStateWithTemplate, error) {
 	return &TFStateWithTemplate{t, s}, nil
 }
 
-func Load(workingDir string) (*TFState, error) {
+func Load(workingDir string) (state *TFState, err error) {
 	file := filepath.Join(workingDir, "terraform.tfstate")
 	f, err := os.Open(file)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		err = f.Close()
+	}()
 
 	var s TFState
 	if err := json.NewDecoder(f).Decode(&s.Value); err != nil {
@@ -64,6 +66,8 @@ func (s *TFState) Query(query string) (*TFState, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	var results []interface{}
 	iter := jq.Run(s.Value)
 	for {
 		v, ok := iter.Next()
@@ -73,7 +77,14 @@ func (s *TFState) Query(query string) (*TFState, error) {
 		if err, ok := v.(error); ok {
 			return nil, err
 		}
-		return &TFState{Value: v}, nil
+		results = append(results, v)
 	}
-	return nil, fmt.Errorf("tfstate: %s is not found in the state", query)
+
+	if len(results) == 0 {
+		return nil, fmt.Errorf("tfstate: %s is not found in the state", query)
+	}
+	if len(results) > 1 {
+		return nil, fmt.Errorf("tfstate: %s returned multiple results", query)
+	}
+	return &TFState{Value: results[0]}, nil
 }
