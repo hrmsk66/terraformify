@@ -46,7 +46,7 @@ func Load(rawHCL string) (*TFConf, error) {
 
 func (tfconf *TFConf) ParseServiceResource(serviceProp prop.TFBlock, c *cli.Config) ([]prop.TFBlock, error) {
 	// Check top-level blocks
-	for _, block := range tfconf.Body().Blocks() {
+	for _, block := range tfconf.File.Body().Blocks() {
 		id, err := getStringAttributeValue(block, "id")
 		if err != nil {
 			return nil, err
@@ -131,7 +131,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 
 	var sensitiveAttrs []SensitiveAttr
 	// Read resource blocks
-	for _, block := range tfconf.Body().Blocks() {
+	for _, block := range tfconf.File.Body().Blocks() {
 		if t := block.Type(); t != "resource" {
 			return nil, fmt.Errorf("unexpected block type: %v", t)
 		}
@@ -143,7 +143,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if id != c.ID {
-				tfconf.Body().RemoveBlock(block)
+				tfconf.File.Body().RemoveBlock(block)
 				continue
 			}
 
