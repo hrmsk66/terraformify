@@ -40,12 +40,20 @@ mkdir test && cd test
 terraformify service compute <service-id> <path-to-package>
 ```
 
+### Specify the Terraform resource name
+
+The tool uses `service` as the default target resource name. To specify a custom name, use the `--resource-name` or `-n` flag.
+
+```
+terraformify service (vcl|compute) <service-id> [<path-to-package>] -n <resource-name>
+```
+
 ### Interactive mode
 
 By default, the tool imports all resources associated with the service, such as ACL entries, dictionary items, WAF..etc. To interactively select which resources to import, use the `--interactive` or `-i` flag.
 
 ```
-terraformify service <service-id> -i
+terraformify service (vcl|compute) <service-id> [<path-to-package>] -i
 ```
 
 ### Import specific version
@@ -53,7 +61,7 @@ terraformify service <service-id> -i
 By default, either the active version will be imported, or the latest version if no version is active. Alternatively, a specific version of the service can be selected by passing version number to the `--version` or `-v` flag.
 
 ```
-terraformify service <service-id> -v <version-number>
+terraformify service (vcl|compute) <service-id> [<path-to-package>] -v <version-number>
 ```
 
 ### force_destroy
@@ -61,7 +69,7 @@ terraformify service <service-id> -v <version-number>
 By default, `force_destroy` is set to `false`. To set them to `true` and allow Terraform to destroy resources, use the `--force-destroy` or `-f` flag.
 
 ```
-terraformify service <service-id> -f
+terraformify service (vcl|compute) <service-id> [<path-to-package>] -f
 ```
 
 ### Manage associated resources
@@ -77,7 +85,7 @@ By default, the `manage_*` attribute is not set so that these resources can be m
 To set the attributes to true and manage the resource with Terraform, use the `--manage-all` or `-m` flag.
 
 ```
-terraformify service <service-id> -m
+terraformify service (vcl|compute) <service-id> [<path-to-package>] -m
 ```
 
 ### Skip editing the state file
@@ -87,7 +95,7 @@ By default, the tool updates `terraform.tfstate` directly. To disable this behav
 **Note:** Terraform detects diffs without this behavior and `terraform apply` may result in the destruction and re-creation of associated resources, such as ACL entries and Dictionary items.
 
 ```
-terraformify service <service-id> -s
+terraformify service (vcl|compute) <service-id> [<path-to-package>] -s
 ```
 
 ## License

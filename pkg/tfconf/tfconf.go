@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -43,77 +44,85 @@ func Load(rawHCL string) (*TFConf, error) {
 	return &TFConf{f}, nil
 }
 
-func (tfconf *TFConf) ParseServiceResource(serviceProp prop.TFBlock, c cli.Config) ([]prop.TFBlock, error) {
+func (tfconf *TFConf) ParseServiceResource(serviceProp prop.TFBlock, c *cli.Config) ([]prop.TFBlock, error) {
 	// Check top-level blocks
-	blocks := tfconf.Body().Blocks()
-	if len(blocks) != 1 {
-		return nil, fmt.Errorf("tfconf: Number of ServiceResource should be 1, got %d", len(blocks))
-	}
-	block := blocks[0]
-
-	if block.Type() != "resource" || block.Labels()[0] != serviceProp.GetType() {
-		return nil, fmt.Errorf("tfconf: Unexpected Terraform block: %#v", block)
-	}
-
-	body := block.Body()
-
-	// Get the nested blocks
-	nestedBlocks := body.Blocks()
-
-	// Collect block properties that require surgical changes.
-	props := make([]prop.TFBlock, 0, len(nestedBlocks))
-
-	for _, block := range nestedBlocks {
-		blockType := block.Type()
-
-		switch blockType {
-		case "acl":
-			id, err := getStringAttributeValue(block, "acl_id")
-			if err != nil {
-				return nil, err
-			}
-			name, err := getStringAttributeValue(block, "name")
-			if err != nil {
-				return nil, err
-			}
-			prop := prop.NewACLResource(id, name, serviceProp)
-			props = append(props, prop)
-		case "dictionary":
-			id, err := getStringAttributeValue(block, "dictionary_id")
-			if err != nil {
-				return nil, err
-			}
-			name, err := getStringAttributeValue(block, "name")
-			if err != nil {
-				return nil, err
-			}
-			prop := prop.NewDictionaryResource(id, name, serviceProp)
-			props = append(props, prop)
-		case "waf":
-			id, err := getStringAttributeValue(block, "waf_id")
-			if err != nil {
-				return nil, err
-			}
-			prop := prop.NewWAFResource(id, serviceProp)
-			props = append(props, prop)
-		case "dynamicsnippet":
-			id, err := getStringAttributeValue(block, "snippet_id")
-			if err != nil {
-				return nil, err
-			}
-			name, err := getStringAttributeValue(block, "name")
-			if err != nil {
-				return nil, err
-			}
-			prop := prop.NewDynamicSnippetResource(id, name, serviceProp)
-			props = append(props, prop)
+	for _, block := range tfconf.Body().Blocks() {
+		id, err := getStringAttributeValue(block, "id")
+		if err != nil {
+			return nil, err
 		}
-	}
 
-	return props, nil
+		if t := block.Type(); t != "resource" {
+			return nil, fmt.Errorf("unexpected block type: %v", t)
+		}
+
+		if id != c.ID {
+			log.Printf("[INFO] tfconf: skip %s (%s)", block.Labels()[0], id)
+			continue
+		}
+
+		log.Printf("[INFO] tfconf: found %s (%s)", block.Labels()[0], id)
+		body := block.Body()
+
+		// Get the nested blocks
+		nestedBlocks := body.Blocks()
+
+		// Collect block properties that require surgical changes.
+		props := make([]prop.TFBlock, 0, len(nestedBlocks))
+
+		for _, block := range nestedBlocks {
+			blockType := block.Type()
+
+			switch blockType {
+			case "acl":
+				id, err := getStringAttributeValue(block, "acl_id")
+				if err != nil {
+					return nil, err
+				}
+				name, err := getStringAttributeValue(block, "name")
+				if err != nil {
+					return nil, err
+				}
+				prop := prop.NewACLResource(id, name, serviceProp)
+				props = append(props, prop)
+			case "dictionary":
+				id, err := getStringAttributeValue(block, "dictionary_id")
+				if err != nil {
+					return nil, err
+				}
+				name, err := getStringAttributeValue(block, "name")
+				if err != nil {
+					return nil, err
+				}
+				prop := prop.NewDictionaryResource(id, name, serviceProp)
+				props = append(props, prop)
+			case "waf":
+				id, err := getStringAttributeValue(block, "waf_id")
+				if err != nil {
+					return nil, err
+				}
+				c.WafID = id
+				prop := prop.NewWAFResource(id, serviceProp)
+				props = append(props, prop)
+			case "dynamicsnippet":
+				id, err := getStringAttributeValue(block, "snippet_id")
+				if err != nil {
+					return nil, err
+				}
+				name, err := getStringAttributeValue(block, "name")
+				if err != nil {
+					return nil, err
+				}
+				prop := prop.NewDynamicSnippetResource(id, name, serviceProp)
+				props = append(props, prop)
+			}
+		}
+		return props, nil
+	}
+	return nil, errors.New("tfconf: target service resource not found")
 }
 
-func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c cli.Config) ([]SensitiveAttr, error) {
+func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) ([]SensitiveAttr, error) {
 	// Read terraform.tfstate into the variable
 	state, err := tfstate.Load(c.Directory)
 	if err != nil {
@@ -126,34 +135,89 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c cli.Config) (
 		if t := block.Type(); t != "resource" {
 			return nil, fmt.Errorf("unexpected block type: %v", t)
 		}
+
 		switch block.Labels()[0] {
 		case "fastly_service_vcl":
+			id, err := getStringAttributeValue(block, "id")
+			if err != nil {
+				return nil, err
+			}
+			if id != c.ID {
+				tfconf.Body().RemoveBlock(block)
+				continue
+			}
+
 			sensitiveAttrs, err = rewriteVCLServiceResource(block, serviceProp, state, c)
 			if err != nil {
 				return nil, err
 			}
 		case "fastly_service_compute":
+			id, err := getStringAttributeValue(block, "id")
+			if err != nil {
+				return nil, err
+			}
+			if id != c.ID {
+				tfconf.Body().RemoveBlock(block)
+				continue
+			}
+
 			sensitiveAttrs, err = rewriteComputeServiceResource(block, serviceProp, state, c)
 			if err != nil {
 				return nil, err
 			}
 		case "fastly_service_waf_configuration":
-			err := rewriteWAFResource(block, serviceProp)
+			id, err := getStringAttributeValue(block, "waf_id")
+			if err != nil {
+				return nil, err
+			}
+			if id != c.WafID {
+				tfconf.Body().RemoveBlock(block)
+				continue
+			}
+
+			err = rewriteWAFResource(block, serviceProp)
 			if err != nil {
 				return nil, err
 			}
 		case "fastly_service_dynamic_snippet_content":
-			err := rewriteDynamicSnippetResource(block, serviceProp, state, c)
+			sid, err := getStringAttributeValue(block, "service_id")
+			if err != nil {
+				return nil, err
+			}
+			if sid != c.ID {
+				tfconf.Body().RemoveBlock(block)
+				continue
+			}
+
+			err = rewriteDynamicSnippetResource(block, serviceProp, state, c)
 			if err != nil {
 				return nil, err
 			}
 		case "fastly_service_dictionary_items":
-			err := rewriteDictionaryResource(block, serviceProp, state, c)
+			sid, err := getStringAttributeValue(block, "service_id")
+			if err != nil {
+				return nil, err
+			}
+			if sid != c.ID {
+				tfconf.Body().RemoveBlock(block)
+				continue
+			}
+
+			err = rewriteDictionaryResource(block, serviceProp, state, c)
 			if err != nil {
 				return nil, err
 			}
 		case "fastly_service_acl_entries":
-			err := rewriteACLResource(block, serviceProp, state, c)
+			sid, err := getStringAttributeValue(block, "service_id")
+			if err != nil {
+				return nil, err
+			}
+			if sid != c.ID {
+				tfconf.Body().RemoveBlock(block)
+				continue
+			}
+
+			err = rewriteACLResource(block, serviceProp, state, c)
 			if err != nil {
 				return nil, err
 			}
@@ -163,7 +227,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c cli.Config) (
 	return sensitiveAttrs, nil
 }
 
-func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) ([]SensitiveAttr, error) {
+func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) ([]SensitiveAttr, error) {
 	var sensitiveAttrs []SensitiveAttr
 
 	st, err := s.AddTemplate(tfstate.ServiceQueryTmplate)
@@ -266,7 +330,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 
 			ext := "txt"
 			filename := fmt.Sprintf("%s.%s", naming.Normalize(name), ext)
-			if err = file.CreateContent(c.Directory, filename, v.Bytes()); err != nil {
+			if err = file.WriteContent(c.Directory, filename, v.Bytes()); err != nil {
 				return nil, err
 			}
 
@@ -295,7 +359,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 
 			// Save content to a file
 			filename := fmt.Sprintf("snippet_%s.vcl", naming.Normalize(name))
-			if err = file.CreateVCL(c.Directory, filename, v.Bytes()); err != nil {
+			if err = file.WriteVCL(c.Directory, filename, v.Bytes()); err != nil {
 				return nil, err
 			}
 
@@ -324,7 +388,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 
 			// Save content to a file
 			filename := fmt.Sprintf("%s.vcl", naming.Normalize(name))
-			if err = file.CreateVCL(c.Directory, filename, v.Bytes()); err != nil {
+			if err = file.WriteVCL(c.Directory, filename, v.Bytes()); err != nil {
 				return nil, err
 			}
 
@@ -380,7 +444,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 					ext = "json"
 				}
 				filename := fmt.Sprintf("%s.%s", naming.Normalize(name), ext)
-				if err = file.CreateLogFormat(c.Directory, filename, format.Bytes()); err != nil {
+				if err = file.WriteLogFormat(c.Directory, filename, format.Bytes()); err != nil {
 					return nil, err
 				}
 				// Replace content attribute of the nested block with file function expression
@@ -462,7 +526,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 	return sensitiveAttrs, nil
 }
 
-func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) ([]SensitiveAttr, error) {
+func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) ([]SensitiveAttr, error) {
 	var sensitiveAttrs []SensitiveAttr
 
 	st, err := s.AddTemplate(tfstate.ServiceQueryTmplate)
@@ -619,7 +683,7 @@ func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlo
 	return sensitiveAttrs, nil
 }
 
-func rewriteACLResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) error {
+func rewriteACLResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) error {
 	if err := rewriteCommonAttributes(block, serviceProp, s, c); err != nil {
 		return err
 	}
@@ -642,7 +706,7 @@ func rewriteACLResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfst
 	return nil
 }
 
-func rewriteDictionaryResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) error {
+func rewriteDictionaryResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) error {
 	if err := rewriteCommonAttributes(block, serviceProp, s, c); err != nil {
 		return err
 	}
@@ -655,7 +719,7 @@ func rewriteDictionaryResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 	return nil
 }
 
-func rewriteDynamicSnippetResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) error {
+func rewriteDynamicSnippetResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) error {
 	if err := rewriteCommonAttributes(block, serviceProp, s, c); err != nil {
 		return err
 	}
@@ -677,7 +741,7 @@ func rewriteDynamicSnippetResource(block *hclwrite.Block, serviceProp prop.TFBlo
 
 	// Save content to a file
 	filename := fmt.Sprintf("dsnippet_%s.vcl", naming.Normalize(name))
-	if err = file.CreateVCL(c.Directory, filename, v.Bytes()); err != nil {
+	if err = file.WriteVCL(c.Directory, filename, v.Bytes()); err != nil {
 		return err
 	}
 
@@ -694,7 +758,7 @@ func rewriteDynamicSnippetResource(block *hclwrite.Block, serviceProp prop.TFBlo
 	return nil
 }
 
-func rewriteCommonAttributes(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c cli.Config) error {
+func rewriteCommonAttributes(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) error {
 	var idName, attrName string
 	switch block.Labels()[0] {
 	case "fastly_service_dynamic_snippet_content":
@@ -822,7 +886,7 @@ func buildForEach(serviceProp prop.TFBlock, resourceType, name string) hclwrite.
 		{Type: hclsyntax.TokenIdent, Bytes: []byte("in"), SpacesBefore: 1},
 		{Type: hclsyntax.TokenIdent, Bytes: []byte(serviceProp.GetType()), SpacesBefore: 1},
 		{Type: hclsyntax.TokenDot, Bytes: []byte{'.'}, SpacesBefore: 0},
-		{Type: hclsyntax.TokenIdent, Bytes: []byte("service"), SpacesBefore: 0},
+		{Type: hclsyntax.TokenIdent, Bytes: []byte(serviceProp.GetNormalizedName()), SpacesBefore: 0},
 		{Type: hclsyntax.TokenDot, Bytes: []byte{'.'}, SpacesBefore: 0},
 		{Type: hclsyntax.TokenIdent, Bytes: []byte(resourceType), SpacesBefore: 0},
 		{Type: hclsyntax.TokenColon, Bytes: []byte{':'}, SpacesBefore: 1},
