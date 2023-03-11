@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	hcl "github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/hrmsk66/terraformify/pkg/cli"
@@ -131,7 +131,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 
 	var sensitiveAttrs []SensitiveAttr
 	// Read resource blocks
-	for _, block := range tfconf.File.Body().Blocks() {
+	for _, block := range tfconf.Body().Blocks() {
 		if t := block.Type(); t != "resource" {
 			return nil, fmt.Errorf("unexpected block type: %v", t)
 		}
@@ -143,7 +143,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if id != c.ID {
-				tfconf.File.Body().RemoveBlock(block)
+				tfconf.Body().RemoveBlock(block)
 				continue
 			}
 
@@ -157,7 +157,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if id != c.ID {
-				tfconf.File.Body().RemoveBlock(block)
+				tfconf.Body().RemoveBlock(block)
 				continue
 			}
 
@@ -171,7 +171,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if id != c.WafID {
-				tfconf.File.Body().RemoveBlock(block)
+				tfconf.Body().RemoveBlock(block)
 				continue
 			}
 
@@ -185,7 +185,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if sid != c.ID {
-				tfconf.File.Body().RemoveBlock(block)
+				tfconf.Body().RemoveBlock(block)
 				continue
 			}
 
@@ -199,7 +199,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if sid != c.ID {
-				tfconf.File.Body().RemoveBlock(block)
+				tfconf.Body().RemoveBlock(block)
 				continue
 			}
 
@@ -213,7 +213,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 			if sid != c.ID {
-				tfconf.File.Body().RemoveBlock(block)
+				tfconf.Body().RemoveBlock(block)
 				continue
 			}
 
