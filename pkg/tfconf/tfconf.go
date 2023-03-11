@@ -293,8 +293,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-				ResourceType:    serviceProp.GetType(),
-				ResourceName:    serviceProp.GetNormalizedName(),
+				ServiceId:       c.ID,
 				NestedBlockName: blockType,
 				Name:            name,
 				AttributeName:   "xff",
@@ -318,8 +317,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-				ResourceType:    serviceProp.GetType(),
-				ResourceName:    serviceProp.GetNormalizedName(),
+				ServiceId:       c.ID,
 				NestedBlockName: blockType,
 				Name:            name,
 				AttributeName:   "content",
@@ -347,8 +345,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-				ResourceType:    serviceProp.GetType(),
-				ResourceName:    serviceProp.GetNormalizedName(),
+				ServiceId:       c.ID,
 				NestedBlockName: blockType,
 				Name:            name,
 				AttributeName:   "content",
@@ -376,8 +373,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 
 			// Get content from TFState
 			v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-				ResourceType:    serviceProp.GetType(),
-				ResourceName:    serviceProp.GetNormalizedName(),
+				ServiceId:       c.ID,
 				NestedBlockName: blockType,
 				Name:            name,
 				AttributeName:   "content",
@@ -404,20 +400,19 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 
 			// Handling sensitive attrs
 			keys := []string{"ssl_client_cert", "ssl_client_key"}
-			for _, k := range keys {
+			for _, key := range keys {
 				v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-					ResourceType:    serviceProp.GetType(),
-					ResourceName:    serviceProp.GetNormalizedName(),
+					ServiceId:       c.ID,
 					NestedBlockName: blockType,
 					Name:            name,
-					AttributeName:   k,
+					AttributeName:   key,
 				})
 				if err != nil {
 					return nil, err
 				}
 				if v.String() != "" {
-					varName := naming.Normalize(name) + "_" + k
-					nestedBody.SetAttributeTraversal(k, buildVariableRef(varName))
+					varName := naming.Normalize(name) + "_" + key
+					nestedBody.SetAttributeTraversal(key, buildVariableRef(varName))
 					sensitiveAttrs = append(sensitiveAttrs, SensitiveAttr{blockType, varName, v.String()})
 				}
 			}
@@ -429,8 +424,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 				}
 
 				format, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-					ResourceType:    serviceProp.GetType(),
-					ResourceName:    serviceProp.GetNormalizedName(),
+					ServiceId:       c.ID,
 					NestedBlockName: blockType,
 					Name:            name,
 					AttributeName:   "format",
@@ -502,21 +496,20 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 				case "logging_syslog":
 					keys = []string{"tls_client_key"}
 				}
-				for _, k := range keys {
+				for _, key := range keys {
 					v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-						ResourceType:    serviceProp.GetType(),
-						ResourceName:    serviceProp.GetNormalizedName(),
+						ServiceId:       c.ID,
 						NestedBlockName: blockType,
 						Name:            name,
-						AttributeName:   k,
+						AttributeName:   key,
 					})
 					if err != nil {
 						return nil, err
 					}
 
 					// the attribute names for under "logging_s3" are redundant. Removing the prefix "s3_" in the variable names
-					varName := naming.Normalize(name) + "_" + strings.TrimPrefix(k, "s3_")
-					nestedBody.SetAttributeTraversal(k, buildVariableRef(varName))
+					varName := naming.Normalize(name) + "_" + strings.TrimPrefix(key, "s3_")
+					nestedBody.SetAttributeTraversal(key, buildVariableRef(varName))
 					sensitiveAttrs = append(sensitiveAttrs, SensitiveAttr{blockType, varName, v.String()})
 				}
 			}
@@ -585,20 +578,19 @@ func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlo
 
 			// Handling sensitive attrs
 			keys := []string{"ssl_client_cert", "ssl_client_key"}
-			for _, k := range keys {
+			for _, key := range keys {
 				v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-					ResourceType:    serviceProp.GetType(),
-					ResourceName:    serviceProp.GetNormalizedName(),
+					ServiceId:       c.ID,
 					NestedBlockName: blockType,
 					Name:            name,
-					AttributeName:   k,
+					AttributeName:   key,
 				})
 				if err != nil {
 					return nil, err
 				}
 				if v.String() != "" {
-					varName := naming.Normalize(name) + "_" + k
-					nestedBody.SetAttributeTraversal(k, buildVariableRef(varName))
+					varName := naming.Normalize(name) + "_" + key
+					nestedBody.SetAttributeTraversal(key, buildVariableRef(varName))
 					sensitiveAttrs = append(sensitiveAttrs, SensitiveAttr{blockType, varName, v.String()})
 				}
 			}
@@ -659,21 +651,20 @@ func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlo
 				case "logging_syslog":
 					keys = []string{"tls_client_key"}
 				}
-				for _, k := range keys {
+				for _, key := range keys {
 					v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
-						ResourceType:    serviceProp.GetType(),
-						ResourceName:    serviceProp.GetNormalizedName(),
+						ServiceId:       c.ID,
 						NestedBlockName: blockType,
 						Name:            name,
-						AttributeName:   k,
+						AttributeName:   key,
 					})
 					if err != nil {
 						return nil, err
 					}
 
 					// the attribute names for under "logging_s3" are redundant. Removing the prefix "s3_" in the variable names
-					varName := naming.Normalize(name) + "_" + strings.TrimPrefix(k, "s3_")
-					nestedBody.SetAttributeTraversal(k, buildVariableRef(varName))
+					varName := naming.Normalize(name) + "_" + strings.TrimPrefix(key, "s3_")
+					nestedBody.SetAttributeTraversal(key, buildVariableRef(varName))
 					sensitiveAttrs = append(sensitiveAttrs, SensitiveAttr{blockType, varName, v.String()})
 				}
 			}

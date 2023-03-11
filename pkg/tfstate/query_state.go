@@ -6,13 +6,12 @@ import (
 )
 
 // query templates for gojq
-const ServiceQueryTmplate = `.resources[] | select(.type == "{{.ResourceType}}") | select(.name == "{{.ResourceName}}") | .instances[].attributes.{{.NestedBlockName}}[] | select(.name == "{{.Name}}") | .{{.AttributeName}}`
+const ServiceQueryTmplate = `.resources[] | select(.instances[].attributes.id == "{{.ServiceId}}") | .instances[].attributes.{{.NestedBlockName}}[] | select(.name == "{{.Name}}") | .{{.AttributeName}}`
 const DsnippetQueryTmplate = `.resources[] | select(.type == "fastly_service_dynamic_snippet_content") | select(.name == "{{.ResourceName}}") | .instances[].attributes.content`
 const ResourceNameQueryTmplate = `.resources[] | select(.type == "{{.ResourceType}}") | .instances[].attributes.{{.NestedBlockName}}[] | select(.{{.IDName}} == "{{.ID}}") | .name`
 
 type ServiceQueryParams struct {
-	ResourceType    string
-	ResourceName    string
+	ServiceId       string
 	NestedBlockName string
 	Name            string
 	AttributeName   string
