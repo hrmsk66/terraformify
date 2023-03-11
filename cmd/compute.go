@@ -82,7 +82,7 @@ var computeCmd = &cobra.Command{
 			SkipEditState: skipEditState,
 		}
 
-		return importCompute(c)
+		return ImportCompute(c)
 	},
 }
 
@@ -90,7 +90,7 @@ func init() {
 	serviceCmd.AddCommand(computeCmd)
 }
 
-func importCompute(c cli.Config) error {
+func ImportCompute(c cli.Config) error {
 	log.Printf("[INFO] Initializing Terraform")
 	// Find Terraform binary
 	tf, err := terraform.FindExec(c.Directory)

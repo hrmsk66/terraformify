@@ -1,4 +1,4 @@
-package cmd
+package tests
 
 import (
 	"errors"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/terraform"
+	"github.com/hrmsk66/terraformify/cmd"
 	"github.com/hrmsk66/terraformify/pkg/cli"
 	"github.com/stretchr/testify/require"
 )
@@ -143,7 +144,7 @@ func TestImportService(t *testing.T) {
 
 			if tc.resourceType == "vcl" {
 				// Run terraformify
-				if err = importVCL(c); err != nil {
+				if err = cmd.ImportVCL(c); err != nil {
 					t.Errorf("Failed to import the service: %s", err)
 				}
 			}
@@ -159,7 +160,7 @@ func TestImportService(t *testing.T) {
 				}
 
 				// Run terraformify
-				if err = importCompute(c); err != nil {
+				if err = cmd.ImportCompute(c); err != nil {
 					t.Errorf("Failed to import the service: %s", err)
 				}
 			}

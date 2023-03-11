@@ -81,7 +81,7 @@ var vclCmd = &cobra.Command{
 			SkipEditState: skipEditState,
 		}
 
-		return importVCL(c)
+		return ImportVCL(c)
 	},
 }
 
@@ -89,7 +89,7 @@ func init() {
 	serviceCmd.AddCommand(vclCmd)
 }
 
-func importVCL(c cli.Config) error {
+func ImportVCL(c cli.Config) error {
 	log.Printf("[INFO] Initializing Terraform")
 	// Find Terraform binary
 	tf, err := terraform.FindExec(c.Directory)
