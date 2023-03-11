@@ -40,6 +40,14 @@ mkdir test && cd test
 terraformify service compute <service-id> <path-to-package>
 ```
 
+### Specify the Terraform resource name
+
+The tool uses `service` as the default target resource name. To specify a custom name, use the `--resource-name` or `-n` flag.
+
+```
+terraformify service (vcl|compute) <service-id> [<path-to-package>] -n <resource-name>
+```
+
 ### Interactive mode
 
 By default, the tool imports all resources associated with the service, such as ACL entries, dictionary items, WAF..etc. To interactively select which resources to import, use the `--interactive` or `-i` flag.

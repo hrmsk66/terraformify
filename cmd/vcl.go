@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/hrmsk66/terraformify/pkg/cli"
 	"github.com/hrmsk66/terraformify/pkg/file"
@@ -31,39 +30,49 @@ var vclCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		err = cli.CheckDirEmpty(workingDir)
-		if err != nil {
+
+		if err := cli.CheckDir(workingDir); err != nil {
 			return err
 		}
 
 		apiKey := viper.GetString("api-key")
-		err = os.Setenv("FASTLY_API_KEY", apiKey)
-		if err != nil {
-			log.Fatal(err)
+		if err := os.Setenv("FASTLY_API_KEY", apiKey); err != nil {
+			return err
 		}
 
 		version, err := cmd.Flags().GetInt("version")
 		if err != nil {
 			return err
 		}
+
 		interactive, err := cmd.Flags().GetBool("interactive")
 		if err != nil {
 			return err
 		}
+
+		resourceName, err := cmd.Flags().GetString("resource-name")
+		if err != nil {
+			return err
+		}
+
 		manageAll, err := cmd.Flags().GetBool("manage-all")
 		if err != nil {
 			return err
 		}
+
 		forceDestroy, err := cmd.Flags().GetBool("force-destroy")
 		if err != nil {
 			return err
 		}
+
 		skipEditState, err := cmd.Flags().GetBool("skip-edit-state")
 		if err != nil {
 			return err
 		}
+
 		c := cli.Config{
 			ID:            args[0],
+			ResourceName:  resourceName,
 			Version:       version,
 			Directory:     workingDir,
 			Interactive:   interactive,
@@ -82,7 +91,7 @@ func init() {
 
 func importVCL(c cli.Config) error {
 	log.Printf("[INFO] Initializing Terraform")
-	// Find/Install Terraform binary
+	// Find Terraform binary
 	tf, err := terraform.FindExec(c.Directory)
 	if err != nil {
 		return err
@@ -99,24 +108,20 @@ func importVCL(c cli.Config) error {
 
 	// Run "terraform init"
 	log.Printf(`[INFO] Running "terraform init"`)
-	err = terraform.Init(tf)
-	if err != nil {
+	if err := terraform.Init(tf); err != nil {
 		return err
 	}
 
 	// Run "terraform version"
-	err = terraform.Version(tf)
-	if err != nil {
+	if err := terraform.Version(tf); err != nil {
 		return err
 	}
 
 	// Create VCLServiceResourceProp struct
-	serviceProp := prop.NewVCLServiceResource(c.ID, "service", c.Version)
+	serviceProp := prop.NewVCLServiceResource(c.ID, c.ResourceName, c.Version)
 
-	// log.Printf(`[INFO] Running "terraform import %s %s"`, serviceProp.GetRef(), serviceProp.GetIDforTFImport())
 	log.Printf(`[INFO] Running "terraform import" on %s`, serviceProp.GetRef())
-	err = terraform.Import(tf, serviceProp, tempf)
-	if err != nil {
+	if err := terraform.Import(tf, serviceProp, tempf); err != nil {
 		return err
 	}
 
@@ -136,7 +141,7 @@ func importVCL(c cli.Config) error {
 		return err
 	}
 
-	props, err := hcl.ParseServiceResource(serviceProp, c)
+	props, err := hcl.ParseServiceResource(serviceProp, &c)
 	if err != nil {
 		return err
 	}
@@ -154,8 +159,7 @@ func importVCL(c cli.Config) error {
 			}
 
 			log.Printf(`[INFO] Running "terraform import" on %s`, p.GetRef())
-			terraform.Import(tf, p, tempf)
-			if err != nil {
+			if err := terraform.Import(tf, p, tempf); err != nil {
 				return err
 			}
 		}
@@ -184,56 +188,58 @@ func importVCL(c cli.Config) error {
 		return err
 	}
 
-	sensitiveAttrs, err := hcl.RewriteResources(serviceProp, c)
+	sensitiveAttrs, err := hcl.RewriteResources(serviceProp, &c)
 	if err != nil {
 		return err
 	}
 
-	log.Print("[INFO] Writing the configuration to main.tf")
-	path := filepath.Join(c.Directory, "main.tf")
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
+	if err := file.WriteMainTF(c.Directory, hcl.Bytes()); err != nil {
 		return err
 	}
-	defer f.Close()
-	f.Write(hcl.Bytes())
 
-	log.Print("[INFO] Writing .gitignore")
-	if err := file.CreateGitIgnore(c.Directory); err != nil {
+	if err := file.WriteGitIgnore(c.Directory); err != nil {
 		return err
 	}
 
 	if len(sensitiveAttrs) > 0 {
-		log.Print("[INFO] Writing variables.tf")
 		variables := tfconf.BuildVariableDefinitions(sensitiveAttrs)
-		if err := file.CreateVariablesTF(c.Directory, variables); err != nil {
+		if err := file.WriteVariablesTF(c.Directory, variables); err != nil {
 			return err
 		}
 
-		log.Print("[INFO] Writing terraform.tfvars")
 		tfvars := tfconf.BuildTFVars(sensitiveAttrs)
-		if err := file.CreateTFVars(c.Directory, tfvars); err != nil {
+		if err := file.WriteTFVars(c.Directory, tfvars); err != nil {
 			return err
 		}
 	}
 
 	if c.SkipEditState {
-		log.Print(cli.BoldYellow("skip-edit-state flag detected. Leaving terraform.tfstate untouched"))
+		cli.BoldYellow(os.Stderr, "skip-edit-state flag detected. Leaving terraform.tfstate untouched")
 	} else {
-		log.Print(`[INFO] Setting "activate" in terraform.tfstate`)
 		curState, err := tfstate.Load(c.Directory)
 		if err != nil {
 			return err
 		}
 
-		newState, err := curState.SetActivateAttributes()
+		log.Print(`[INFO] Setting "activate" in terraform.tfstate`)
+		newState, err := curState.SetActivateAttribute(tfstate.SetActivateTemplateParams{
+			ServiceId: c.ID,
+		})
+		if err != nil {
+			return err
+		}
+
+		log.Print(`[INFO] Setting "activate" in terraform.tfstate`)
+		newState, err = newState.SetActivateWAFAttribute(tfstate.SetActivateWAFTemplateParams{
+			WafId: c.WafID,
+		})
 		if err != nil {
 			return err
 		}
 
 		if c.ManageAll {
 			log.Print(`[INFO] Settting "manage_*" in terraform.tfstate`)
-			newState, err = newState.SetManageAttributes()
+			newState, err = newState.SetManageAttributes(c.ID)
 			if err != nil {
 				return err
 			}
@@ -242,6 +248,7 @@ func importVCL(c cli.Config) error {
 		if c.ForceDestroy {
 			log.Print(`[INFO] Settting "force_destroy" in terraform.tfstate`)
 			newState, err = newState.SetForceDestroy(tfstate.SetForceDestroyParams{
+				ServiceId:    c.ID,
 				ResourceType: serviceProp.GetType(),
 			})
 			if err != nil {
@@ -254,6 +261,7 @@ func importVCL(c cli.Config) error {
 			case *prop.ACLResource, *prop.DictionaryResource, *prop.DynamicSnippetResource:
 				log.Printf(`[INFO] Inserting "index_key" in terraform.tfstate for %s`, p.GetRef())
 				newState, err = newState.SetIndexKey(tfstate.SetIndexKeyParams{
+					ServiceId:    c.ID,
 					ResourceType: p.GetType(),
 					ResourceName: p.GetNormalizedName(),
 					Name:         p.GetName(),
@@ -271,28 +279,23 @@ func importVCL(c cli.Config) error {
 			for _, attr := range sensitiveAttrs {
 				blockTypes[attr.BlockType] = struct{}{}
 			}
-			newState, err = newState.SetSensitiveAttributes(serviceProp.GetType(), blockTypes)
+			newState, err = newState.SetSensitiveAttributes(c.ID, blockTypes)
 			if err != nil {
 				return err
 			}
 		}
 
-		path = filepath.Join(c.Directory, "terraform.tfstate")
-		f, err = os.OpenFile(path, os.O_RDWR|os.O_TRUNC, 0644)
-		if err != nil {
+		if err := file.WriteTFState(c.Directory, newState.Bytes()); err != nil {
 			return err
 		}
-		f.Write(newState.Bytes())
-		f.Close()
 
 		log.Print(`[INFO] Running "terraform refresh" to format the state file and check errors`)
-		err = terraform.Refresh(tf)
-		if err != nil {
+		if err := terraform.Refresh(tf); err != nil {
 			return err
 		}
 	}
 
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, cli.BoldGreen("Completed!"))
+	cli.BoldGreen(os.Stderr, "Completed!")
 	return nil
 }

@@ -15,6 +15,8 @@ import (
 
 type Config struct {
 	ID            string
+	ResourceName  string
+	WafID         string
 	Package       string
 	Version       int
 	Directory     string
@@ -25,10 +27,10 @@ type Config struct {
 }
 
 var Bold = color.New(color.Bold).SprintFunc()
-var BoldGreen = color.New(color.Bold, color.FgGreen).SprintFunc()
-var BoldGreenf = color.New(color.Bold, color.FgGreen).SprintfFunc()
-var BoldYellow = color.New(color.Bold, color.FgYellow).SprintFunc()
-var BoldYellowf = color.New(color.Bold, color.FgYellow).SprintfFunc()
+var BoldGreen = color.New(color.Bold, color.FgGreen).FprintlnFunc()
+var BoldGreenf = color.New(color.Bold, color.FgGreen).FprintfFunc()
+var BoldYellow = color.New(color.Bold, color.FgYellow).FprintlnFunc()
+var BoldYellowf = color.New(color.Bold, color.FgYellow).FprintfFunc()
 
 func CreateLogFilter() io.Writer {
 	minLevel := os.Getenv("TMFY_LOG")
@@ -43,13 +45,13 @@ func CreateLogFilter() io.Writer {
 	return filter
 }
 
-func CheckDirEmpty(path string) error {
+func CheckDir(path string) error {
 	info, err := os.Stat(path)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	if !info.IsDir() {
-		log.Fatal(fmt.Errorf("%s is not a directory", path))
+		return fmt.Errorf("%s is not a directory", path)
 	}
 
 	d, err := os.Open(path)
@@ -63,14 +65,22 @@ func CheckDirEmpty(path string) error {
 		return nil
 	}
 
-	return errors.New("Working directory is not empty")
+	msg := `WARNING
+   The working directory is not empty.
+   If the import fails, the files in the directory may be left in an inconsistent state.
+   Please ensure that you back up the directory before proceeding.
+   Do you want to continue?`
+	if YesNo(msg) {
+		return nil
+	}
+	return errors.New("working directory is not empty")
 }
 
 func YesNo(message string) bool {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Printf("%s [y/n]: ", message)
+		BoldYellowf(os.Stderr, "%s [y/n]: ", message)
 
 		response, err := reader.ReadString('\n')
 		if err != nil {
