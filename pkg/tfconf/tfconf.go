@@ -46,7 +46,7 @@ func Load(rawHCL string) (*TFConf, error) {
 
 func (tfconf *TFConf) ParseServiceResource(serviceProp prop.TFBlock, c *cli.Config) ([]prop.TFBlock, error) {
 	// Check top-level blocks
-	for _, block := range tfconf.File.Body().Blocks() {
+	for _, block := range tfconf.Body().Blocks() {
 		id, err := getStringAttributeValue(block, "id")
 		if err != nil {
 			return nil, err
