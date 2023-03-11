@@ -18,8 +18,8 @@ type Config struct {
 	ResourceName  string
 	WafID         string
 	Package       string
-	Version       int
 	Directory     string
+	Version       int
 	Interactive   bool
 	ManageAll     bool
 	ForceDestroy  bool
@@ -45,7 +45,7 @@ func CreateLogFilter() io.Writer {
 	return filter
 }
 
-func CheckDir(path string) error {
+func CheckDir(path string) (err error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -58,7 +58,9 @@ func CheckDir(path string) error {
 	if err != nil {
 		return err
 	}
-	defer d.Close()
+	defer func() {
+		err = d.Close()
+	}()
 
 	_, err = d.Readdir(1)
 	if err == io.EOF {

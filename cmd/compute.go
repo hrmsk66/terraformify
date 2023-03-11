@@ -31,12 +31,12 @@ var computeCmd = &cobra.Command{
 			return err
 		}
 
-		if err := cli.CheckDir(workingDir); err != nil {
+		if err = cli.CheckDir(workingDir); err != nil {
 			return err
 		}
 
 		apiKey := viper.GetString("api-key")
-		if err := os.Setenv("FASTLY_API_KEY", apiKey); err != nil {
+		if err = os.Setenv("FASTLY_API_KEY", apiKey); err != nil {
 			return err
 		}
 
@@ -102,19 +102,18 @@ func ImportCompute(c cli.Config) error {
 	// Create temp*.tf with empty service resource blocks
 	log.Printf("[INFO] Creating provider.tf and temp*.tf")
 	tempf, err := file.CreateInitTerraformFiles(c.Directory)
-	defer os.Remove(tempf.Name())
 	if err != nil {
 		return err
 	}
 
 	// Run "terraform init"
 	log.Printf(`[INFO] Running "terraform init"`)
-	if err := terraform.Init(tf); err != nil {
+	if err = terraform.Init(tf); err != nil {
 		return err
 	}
 
 	// Run "terraform version"
-	if err := terraform.Version(tf); err != nil {
+	if err = terraform.Version(tf); err != nil {
 		return err
 	}
 
@@ -122,7 +121,7 @@ func ImportCompute(c cli.Config) error {
 	serviceProp := prop.NewComputeServiceResource(c.ID, c.ResourceName, c.Version)
 
 	log.Printf(`[INFO] Running "terraform import" on %s`, serviceProp.GetRef())
-	if err := terraform.Import(tf, serviceProp, tempf); err != nil {
+	if err = terraform.Import(tf, serviceProp, tempf); err != nil {
 		return err
 	}
 
@@ -160,17 +159,17 @@ func ImportCompute(c cli.Config) error {
 			}
 
 			log.Printf(`[INFO] Running "terraform import" on %s`, p.GetRef())
-			if err := terraform.Import(tf, p, tempf); err != nil {
+			if err = terraform.Import(tf, p, tempf); err != nil {
 				return err
 			}
 		}
 	}
 
 	// temp*.tf no longer needed
-	if err := tempf.Close(); err != nil {
+	if err = tempf.Close(); err != nil {
 		return err
 	}
-	if err := os.Remove(tempf.Name()); err != nil {
+	if err = os.Remove(tempf.Name()); err != nil {
 		return err
 	}
 
@@ -240,7 +239,7 @@ func ImportCompute(c cli.Config) error {
 		}
 
 		if c.ManageAll {
-			log.Print(`[INFO] Settting "manage_*" in terraform.tfstate`)
+			log.Print(`[INFO] Setting "manage_*" in terraform.tfstate`)
 			newState, err = newState.SetManageAttributes(c.ID)
 			if err != nil {
 				return err
@@ -248,7 +247,7 @@ func ImportCompute(c cli.Config) error {
 		}
 
 		if c.ForceDestroy {
-			log.Print(`[INFO] Settting "force_destroy" in terraform.tfstate`)
+			log.Print(`[INFO] Setting "force_destroy" in terraform.tfstate`)
 			newState, err = newState.SetForceDestroy(tfstate.SetForceDestroyParams{
 				ServiceId:    c.ID,
 				ResourceType: serviceProp.GetType(),
@@ -287,7 +286,7 @@ func ImportCompute(c cli.Config) error {
 			}
 		}
 
-		if err := file.WriteTFState(c.Directory, newState.Bytes()); err != nil {
+		if err = file.WriteTFState(c.Directory, newState.Bytes()); err != nil {
 			return err
 		}
 

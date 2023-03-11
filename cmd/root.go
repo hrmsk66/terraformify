@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -48,16 +49,15 @@ func init() {
 	rootCmd.PersistentFlags().StringP("working-dir", "d", ".", "Terraform working directory")
 	rootCmd.PersistentFlags().BoolP("interactive", "i", false, "Interactively select associated resources to import")
 	rootCmd.PersistentFlags().StringP("api-key", "k", "", "Fastly API token (or via FASTLY_API_KEY)")
-
-	// Hidden flags
 	rootCmd.PersistentFlags().BoolP("skip-edit-state", "s", false, "Skip editing terraform.tfstate and leave it untouched (Note: Diffs will be detected on terraform plan/apply)")
-	rootCmd.PersistentFlags().MarkHidden("skip-edit-state")
 
 	// Associate --api-key with the env ver, FASTLY_API_KEY
 	replacer := strings.NewReplacer("-", "_")
 	viper.SetEnvKeyReplacer(replacer)
 	viper.SetEnvPrefix("FASTLY")
-	viper.BindPFlag("api-key", rootCmd.PersistentFlags().Lookup("api-key"))
+	if err := viper.BindPFlag("api-key", rootCmd.PersistentFlags().Lookup("api-key")); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // initConfig reads in config file and ENV variables if set.
