@@ -24,14 +24,14 @@ Choose one of the following options to give terraformify access to your API toke
 
 Run the command in an empty directory
 
-### Import VCL service
+### Importing VCL Service
 
 ```
 mkdir test && cd test
 terraformify service vcl <service-id>
 ```
 
-### Import Compute@Edge service
+### Importing Compute@Edge Service
 
 To import compute@Edge services, the path to the WASM package is used as an argument in addition to the service ID.
 
@@ -40,7 +40,7 @@ mkdir test && cd test
 terraformify service compute <service-id> <path-to-package>
 ```
 
-### Specify the Terraform resource name
+### Customizing the Resource Name
 
 The tool uses `service` as the default target resource name. To specify a custom name, use the `--resource-name` or `-n` flag.
 
@@ -48,7 +48,7 @@ The tool uses `service` as the default target resource name. To specify a custom
 terraformify service (vcl|compute) <service-id> [<path-to-package>] -n <resource-name>
 ```
 
-### Interactive mode
+### Interactive Mode
 
 By default, the tool imports all resources associated with the service, such as ACL entries, dictionary items, WAF..etc. To interactively select which resources to import, use the `--interactive` or `-i` flag.
 
@@ -56,7 +56,7 @@ By default, the tool imports all resources associated with the service, such as 
 terraformify service (vcl|compute) <service-id> [<path-to-package>] -i
 ```
 
-### Import specific version
+### Importing Specific Version
 
 By default, either the active version will be imported, or the latest version if no version is active. Alternatively, a specific version of the service can be selected by passing version number to the `--version` or `-v` flag.
 
@@ -72,7 +72,7 @@ By default, `force_destroy` is set to `false`. To set them to `true` and allow T
 terraformify service (vcl|compute) <service-id> [<path-to-package>] -f
 ```
 
-### Manage associated resources
+### Manage Associated Resources
 
 By default, the `manage_*` attribute is not set so that these resources can be managed externally.
 
@@ -88,7 +88,7 @@ To set the attributes to true and manage the resource with Terraform, use the `-
 terraformify service (vcl|compute) <service-id> [<path-to-package>] -m
 ```
 
-### Skip editing the state file
+### Skip Editing the State File
 
 By default, the tool updates `terraform.tfstate` directly. To disable this behavior and leave the state file untouched, use the `--skip-edit-state` or `-s` flag.
 
