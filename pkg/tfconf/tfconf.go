@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"path/filepath"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -328,12 +329,12 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 
 			ext := "txt"
 			filename := fmt.Sprintf("%s.%s", naming.Normalize(name), ext)
-			if err = file.WriteContent(c.Directory, filename, v.Bytes()); err != nil {
+			if err = file.WriteContent(c.Directory, c.ResourceName, filename, v.Bytes()); err != nil {
 				return nil, err
 			}
 
 			// Replace content attribute of the nested block with file function expression
-			path := fmt.Sprintf("./content/%s", filename)
+			path := filepath.Join(".", "content", c.ResourceName, filename)
 			tokens := buildFileFunction(path)
 			nestedBody.SetAttributeRaw("content", tokens)
 		case "snippet":
@@ -356,12 +357,12 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 
 			// Save content to a file
 			filename := fmt.Sprintf("snippet_%s.vcl", naming.Normalize(name))
-			if err = file.WriteVCL(c.Directory, filename, v.Bytes()); err != nil {
+			if err = file.WriteVCL(c.Directory, c.ResourceName, filename, v.Bytes()); err != nil {
 				return nil, err
 			}
 
 			// Replace content attribute of the nested block with file function expression
-			path := fmt.Sprintf("./vcl/%s", filename)
+			path := filepath.Join(".", "vcl", c.ResourceName, filename)
 			tokens := buildFileFunction(path)
 			nestedBody.SetAttributeRaw("content", tokens)
 		case "vcl":
@@ -384,12 +385,12 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 
 			// Save content to a file
 			filename := fmt.Sprintf("%s.vcl", naming.Normalize(name))
-			if err = file.WriteVCL(c.Directory, filename, v.Bytes()); err != nil {
+			if err = file.WriteVCL(c.Directory, c.ResourceName, filename, v.Bytes()); err != nil {
 				return nil, err
 			}
 
 			// Replace content attribute of the nested block with file function expression
-			path := fmt.Sprintf("./vcl/%s", filename)
+			path := filepath.Join(".", "vcl", c.ResourceName, filename)
 			tokens := buildFileFunction(path)
 			nestedBody.SetAttributeRaw("content", tokens)
 		case "backend":
@@ -438,11 +439,11 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 					ext = "json"
 				}
 				filename := fmt.Sprintf("%s.%s", naming.Normalize(name), ext)
-				if err = file.WriteLogFormat(c.Directory, filename, format.Bytes()); err != nil {
+				if err = file.WriteLogFormat(c.Directory, c.ResourceName, filename, format.Bytes()); err != nil {
 					return nil, err
 				}
 				// Replace content attribute of the nested block with file function expression
-				path := fmt.Sprintf("./logformat/%s", filename)
+				path := filepath.Join(".", "logformat", c.ResourceName, filename)
 				tokens := buildFileFunction(path)
 				nestedBody.SetAttributeRaw("format", tokens)
 
@@ -744,13 +745,13 @@ func rewriteDynamicSnippetResource(block *hclwrite.Block, serviceProp prop.TFBlo
 
 	// Save content to a file
 	filename := fmt.Sprintf("dsnippet_%s.vcl", naming.Normalize(name))
-	if err = file.WriteVCL(c.Directory, filename, v.Bytes()); err != nil {
+	if err = file.WriteVCL(c.Directory, c.ResourceName, filename, v.Bytes()); err != nil {
 		return err
 	}
 
 	// Replace content attribute with file function expression
 	body := block.Body()
-	path := fmt.Sprintf("./vcl/%s", filename)
+	path := filepath.Join(".", "vcl", c.ResourceName, filename)
 	tokens := buildFileFunction(path)
 	body.SetAttributeRaw("content", tokens)
 

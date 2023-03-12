@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -33,10 +32,12 @@ func Load(workingDir string) (state *TFState, err error) {
 	file := filepath.Join(workingDir, "terraform.tfstate")
 	f, err := os.Open(file)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer func() {
-		err = f.Close()
+		if err1 := f.Close(); err1 != nil {
+			err = err1
+		}
 	}()
 
 	var s TFState
