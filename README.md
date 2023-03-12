@@ -24,10 +24,6 @@ Choose one of the following options to give terraformify access to your API toke
 
 Run `terraformify` command in an empty directory or in an existing TF directory.
 
-- If you run the command in an empty directory, it will generate new TF files for the service.
-
-- If you run the command in an existing TF directory, it will import the TF state into the existing `terraform.tfstate` and generate new TF configuration files.
-
 _Note that running the command in an existing TF directory will modify the existing state file and may change the contents of other files. Therefore, it is recommended to make a backup of your TF files before importing a new service._
 
 ### Importing VCL Service
