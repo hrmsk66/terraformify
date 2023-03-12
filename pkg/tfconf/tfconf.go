@@ -486,7 +486,19 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 				case "logging_openstack":
 					keys = []string{"access_key"}
 				case "logging_s3":
-					keys = []string{"s3_access_key", "s3_secret_key"}
+					// Need S3 keys when "s3_iam_role" is empty
+					v, err := st.ServiceQuery(tfstate.ServiceQueryParams{
+						ServiceId:       c.ID,
+						NestedBlockName: blockType,
+						Name:            name,
+						AttributeName:   "s3_iam_role",
+					})
+					if err != nil {
+						return nil, err
+					}
+					if v.String() == "" {
+						keys = []string{"s3_access_key", "s3_secret_key"}
+					}
 				case "logging_scalyr":
 					keys = []string{"token"}
 				case "logging_sftp":
