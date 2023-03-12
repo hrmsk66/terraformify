@@ -8,6 +8,7 @@ import (
 func Normalize(name string) string {
 	name = strings.ToLower(name)
 	name = strings.ReplaceAll(name, ".", "_")
+	name = strings.ReplaceAll(name, "/", "_")
 	name = strings.ReplaceAll(name, "\n", "_")
 	name = strings.ReplaceAll(name, "\t", "_")
 	return strings.ReplaceAll(name, " ", "_")
