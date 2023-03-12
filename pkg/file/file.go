@@ -31,8 +31,9 @@ func CreateInitTerraformFiles(workingDir string) (*os.File, error) {
 	return tempf, nil
 }
 
-func WriteMainTF(workingDir string, content []byte) error {
-	return writeFile(workingDir, "main.tf", content)
+func WriteTF(workingDir, resourceName string, content []byte) error {
+	filename := fmt.Sprintf("%s.tf", resourceName)
+	return writeFile(workingDir, filename, content)
 }
 
 func WriteTFState(workingDir string, content []byte) error {
@@ -65,29 +66,29 @@ func WriteGitIgnore(workingDir string) error {
 	return writeFile(workingDir, ".gitignore", gitignore)
 }
 
-func WriteContent(workingDir, name string, content []byte) error {
-	return writeFile(workingDir, name, content, "content")
+func WriteContent(workingDir, resourceName, fileName string, content []byte) error {
+	return writeFile(workingDir, fileName, content, "content", resourceName)
 }
 
-func WriteVCL(workingDir, name string, content []byte) error {
-	return writeFile(workingDir, name, content, "vcl")
+func WriteVCL(workingDir, resourceName, fileName string, content []byte) error {
+	return writeFile(workingDir, fileName, content, "vcl", resourceName)
 }
 
-func WriteLogFormat(workingDir, name string, content []byte) error {
-	return writeFile(workingDir, name, content, "logformat")
+func WriteLogFormat(workingDir, resourceName, fileName string, content []byte) error {
+	return writeFile(workingDir, fileName, content, "logformat", resourceName)
 }
 
-func writeFile(workingDir, name string, content []byte, ftypes ...string) error {
-	for _, ftype := range ftypes {
-		dir := filepath.Join(workingDir, ftype)
-		if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
-			err := os.Mkdir(dir, 0755)
+func writeFile(workingDir, name string, content []byte, dirs ...string) error {
+	for _, dir := range dirs {
+		d := filepath.Join(workingDir, dir)
+		if _, err := os.Stat(d); errors.Is(err, os.ErrNotExist) {
+			err := os.Mkdir(d, 0755)
 			if err != nil {
 				return err
 			}
 		}
 
-		workingDir = filepath.Join(workingDir, ftype)
+		workingDir = filepath.Join(workingDir, dir)
 	}
 
 	file := filepath.Join(workingDir, name)
@@ -105,7 +106,7 @@ func writeFile(workingDir, name string, content []byte, ftypes ...string) error 
 		return nil
 	}
 	// Append
-	if name == "main.tf" || name == "variables.tf" || name == "terraform.tfvars" {
+	if name == "service.tf" || name == "variables.tf" || name == "terraform.tfvars" {
 		log.Printf("[INFO] file: %s exists. appending content", file)
 		return write(file, content, os.O_WRONLY|os.O_APPEND)
 	}

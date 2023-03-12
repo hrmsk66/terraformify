@@ -45,7 +45,7 @@ func CreateLogFilter() io.Writer {
 	return filter
 }
 
-func CheckDir(path string) (err error) {
+func CheckDir(path string, autoYes bool) (err error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -58,8 +58,11 @@ func CheckDir(path string) (err error) {
 	if err != nil {
 		return err
 	}
+
 	defer func() {
-		err = d.Close()
+		if err1 := d.Close(); err1 != nil {
+			err = err1
+		}
 	}()
 
 	_, err = d.Readdir(1)
@@ -67,12 +70,12 @@ func CheckDir(path string) (err error) {
 		return nil
 	}
 
-	msg := `WARNING
+	msg := `WARNING: Working Directory Not Empty
    The working directory is not empty.
    If the import fails, the files in the directory may be left in an inconsistent state.
    Please ensure that you back up the directory before proceeding.
    Do you want to continue?`
-	if YesNo(msg) {
+	if autoYes || YesNo(msg) {
 		return nil
 	}
 	return errors.New("working directory is not empty")

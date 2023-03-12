@@ -50,8 +50,9 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("interactive", "i", false, "Interactively select associated resources to import")
 	rootCmd.PersistentFlags().StringP("api-key", "k", "", "Fastly API token (or via FASTLY_API_KEY)")
 	rootCmd.PersistentFlags().BoolP("skip-edit-state", "s", false, "Skip editing terraform.tfstate and leave it untouched (Note: Diffs will be detected on terraform plan/apply)")
+	rootCmd.PersistentFlags().BoolP("yes", "y", false, "Answer yes automatically to all Yes/No confirmations")
 
-	// Associate --api-key with the env ver, FASTLY_API_KEY
+	// Associate --token with the env ver, FASTLY_API_KEY
 	replacer := strings.NewReplacer("-", "_")
 	viper.SetEnvKeyReplacer(replacer)
 	viper.SetEnvPrefix("FASTLY")

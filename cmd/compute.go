@@ -31,7 +31,12 @@ var computeCmd = &cobra.Command{
 			return err
 		}
 
-		if err = cli.CheckDir(workingDir); err != nil {
+		autoYes, err := cmd.Flags().GetBool("yes")
+		if err != nil {
+			return err
+		}
+
+		if err = cli.CheckDir(workingDir, autoYes); err != nil {
 			return err
 		}
 
@@ -193,7 +198,7 @@ func ImportCompute(c cli.Config) error {
 		return err
 	}
 
-	if err := file.WriteMainTF(c.Directory, hcl.Bytes()); err != nil {
+	if err := file.WriteTF(c.Directory, c.ResourceName, hcl.Bytes()); err != nil {
 		return err
 	}
 

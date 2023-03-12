@@ -15,6 +15,7 @@ import (
 const domain = "test.terraformify.me"
 const prepDir = "tmfy-test-prep"
 const testDir = "tfmy-test"
+const resourceName = "service"
 const packageFile = "package.tar.gz"
 
 func TestMain(m *testing.M) {
@@ -137,6 +138,7 @@ func TestImportService(t *testing.T) {
 			serviceID := terraform.Output(t, prepOpt, "id")
 			c := cli.Config{
 				ID:           serviceID,
+				ResourceName: resourceName,
 				Package:      packageFile,
 				Directory:    testDirPath,
 				ForceDestroy: true,

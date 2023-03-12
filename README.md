@@ -22,12 +22,17 @@ Choose one of the following options to give terraformify access to your API toke
 
 ## Usage
 
-Run the command in an empty directory
+Run `terraformify` command in an empty directory or in an existing TF directory.
+
+- If you run the command in an empty directory, it will generate new TF files for the service.
+
+- If you run the command in an existing TF directory, it will import the TF state into the existing `terraform.tfstate` and generate new TF configuration files.
+
+_Note that running the command in an existing TF directory will modify the existing state file and may change the contents of other files. Therefore, it is recommended to make a backup of your TF files before importing a new service._
 
 ### Importing VCL Service
 
 ```
-mkdir test && cd test
 terraformify service vcl <service-id>
 ```
 
@@ -36,17 +41,18 @@ terraformify service vcl <service-id>
 To import compute@Edge services, the path to the WASM package is used as an argument in addition to the service ID.
 
 ```
-mkdir test && cd test
 terraformify service compute <service-id> <path-to-package>
 ```
 
 ### Customizing the Resource Name
 
-The tool uses `service` as the default target resource name. To specify a custom name, use the `--resource-name` or `-n` flag.
+`service` is used as the default target resource name. To customize it, use the `--resource-name` or `-n` flag.
 
 ```
 terraformify service (vcl|compute) <service-id> [<path-to-package>] -n <resource-name>
 ```
+
+The generated files and directories will be named after the TF resource being imported. If multiple services are to be managed, resource names should be specified to distinguish them.
 
 ### Interactive Mode
 
