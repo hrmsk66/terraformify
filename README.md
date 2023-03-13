@@ -42,7 +42,7 @@ terraformify service compute <service-id> <path-to-package>
 
 ### Customizing the Resource Name
 
-`service` is used as the default target resource name. To customize it, use the `--resource-name` or `-n` flag.
+By default, `service` is used as the TF resource name for the service to be imported. To customize it, use the `--resource-name` or `-n` flag.
 
 ```
 terraformify service (vcl|compute) <service-id> [<path-to-package>] -n <resource-name>
