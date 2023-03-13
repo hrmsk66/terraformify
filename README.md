@@ -24,7 +24,7 @@ Choose one of the following options to give terraformify access to your API toke
 
 Run `terraformify` command in an empty directory or in an existing TF directory.
 
-_Note that running the command in an existing TF directory will modify the existing state file and may change the contents of other files. Therefore, it is recommended to make a backup of your TF files before importing a new service._
+_Note that running the command in an existing TF directory will modify the existing state file and may change the contents of other files(specifically, `variables.tf` and `terraform.tfvars` if present). Therefore, it is recommended to make a backup of your TF files before importing a new service._
 
 ### Importing VCL Service
 
