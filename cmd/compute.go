@@ -20,7 +20,6 @@ var computeCmd = &cobra.Command{
 	Use:          "compute <service-id> <path-to-package>",
 	Short:        "Generate TF files for an existing Fastly C@E service",
 	Args:         cobra.ExactArgs(2),
-	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filter := cli.CreateLogFilter()
 		log.Printf("[INFO] CLI version: %s", getVersion())
