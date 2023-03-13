@@ -2,8 +2,6 @@ package cli
 
 import (
 	"bufio"
-	"errors"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -43,42 +41,6 @@ func CreateLogFilter() io.Writer {
 		Writer:   os.Stderr,
 	}
 	return filter
-}
-
-func CheckDir(path string, autoYes bool) (err error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("%s is not a directory", path)
-	}
-
-	d, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if err1 := d.Close(); err1 != nil {
-			err = err1
-		}
-	}()
-
-	_, err = d.Readdir(1)
-	if err == io.EOF {
-		return nil
-	}
-
-	msg := `WARNING: Working Directory Not Empty
-   The working directory is not empty.
-   If the import fails, the files in the directory may be left in an inconsistent state.
-   Please ensure that you back up the directory before proceeding.
-   Do you want to continue?`
-	if autoYes || YesNo(msg) {
-		return nil
-	}
-	return errors.New("working directory is not empty")
 }
 
 func YesNo(message string) bool {

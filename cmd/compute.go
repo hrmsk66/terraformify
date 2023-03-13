@@ -36,7 +36,7 @@ var computeCmd = &cobra.Command{
 			return err
 		}
 
-		if err = cli.CheckDir(workingDir, autoYes); err != nil {
+		if err = file.CheckDir(workingDir, autoYes); err != nil {
 			return err
 		}
 

@@ -3,11 +3,14 @@ package file
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 
 	_ "embed"
+
+	"github.com/hrmsk66/terraformify/pkg/cli"
 )
 
 //go:embed static/provider.tf
@@ -106,7 +109,7 @@ func writeFile(workingDir, name string, content []byte, dirs ...string) error {
 		return nil
 	}
 	// Append
-	if name == "service.tf" || name == "variables.tf" || name == "terraform.tfvars" {
+	if name == "variables.tf" || name == "terraform.tfvars" {
 		log.Printf("[INFO] file: %s exists. appending content", file)
 		return write(file, content, os.O_WRONLY|os.O_APPEND)
 	}
@@ -116,7 +119,7 @@ func writeFile(workingDir, name string, content []byte, dirs ...string) error {
 		return write(file, content, os.O_WRONLY|os.O_TRUNC)
 	}
 
-	return fmt.Errorf("aborted creating %s, because it already exists", file)
+	return fmt.Errorf("aborted creating %s as it already exists", file)
 }
 
 func write(file string, content []byte, flag int) error {
@@ -129,4 +132,55 @@ func write(file string, content []byte, flag int) error {
 		err = err1
 	}
 	return err
+}
+
+func CheckFile(workingDir, resourceName string) error {
+	fileName := fmt.Sprintf("%s.tf", resourceName)
+	file := filepath.Join(workingDir, fileName)
+
+	_, err := os.Stat(file)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	return fmt.Errorf("aborted creating a TF config file named %#v as it already exists. try another TF resource name using the -n option (the file is named after the TF resource name and it defaults to service.tf)", file)
+}
+
+func CheckDir(workingDir string, autoYes bool) (err error) {
+	info, err := os.Stat(workingDir)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%s is not a directory", workingDir)
+	}
+
+	d, err := os.Open(workingDir)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err1 := d.Close(); err1 != nil {
+			err = err1
+		}
+	}()
+
+	_, err = d.Readdir(1)
+	if err == io.EOF {
+		return nil
+	}
+
+	msg := `WARNING: Working Directory Not Empty
+   The working directory is not empty.
+   If the import fails, the files in the directory may be left in an inconsistent state.
+   Please ensure that you back up the directory before proceeding.
+   Do you want to continue?`
+	if autoYes || cli.YesNo(msg) {
+		return nil
+	}
+	return errors.New("working directory is not empty")
 }

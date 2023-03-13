@@ -36,7 +36,16 @@ var vclCmd = &cobra.Command{
 			return err
 		}
 
-		if err = cli.CheckDir(workingDir, autoYes); err != nil {
+		if err = file.CheckDir(workingDir, autoYes); err != nil {
+			return err
+		}
+
+		resourceName, err := cmd.Flags().GetString("resource-name")
+		if err != nil {
+			return err
+		}
+
+		if err = file.CheckFile(workingDir, resourceName); err != nil {
 			return err
 		}
 
@@ -51,11 +60,6 @@ var vclCmd = &cobra.Command{
 		}
 
 		interactive, err := cmd.Flags().GetBool("interactive")
-		if err != nil {
-			return err
-		}
-
-		resourceName, err := cmd.Flags().GetString("resource-name")
 		if err != nil {
 			return err
 		}
