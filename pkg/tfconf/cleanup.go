@@ -10,7 +10,8 @@ func cleanupHCL(rawHCL string) string {
 	var buf bytes.Buffer
 	scanner := bufio.NewScanner(strings.NewReader(rawHCL))
 
-	var block, eot string
+	var blocks []string
+	var eot string
 	var skip bool
 
 	// helper fn; set `skip` and `eot` if we are handling multiline strings
@@ -43,65 +44,76 @@ func cleanupHCL(rawHCL string) string {
 			continue
 		}
 
-		// Closing bracket; clear the block name
-		if block != "" && trimedText == "}" {
-			block = ""
-		}
-
 		// Set the block name if the block has attributes that needs to be truncated
-		if block == "" && strings.HasSuffix(trimedText, "{") {
+		if strings.HasSuffix(trimedText, "{") {
 			switch {
+			case strings.HasPrefix(trimedText, "resource"):
+				blocks = append(blocks, "resource")
 			case strings.HasPrefix(trimedText, "backend"):
-				block = "backend"
+				blocks = append(blocks, "backend")
 			case strings.HasPrefix(trimedText, "response_object"):
-				block = "response_object"
+				blocks = append(blocks, "response_object")
 			case strings.HasPrefix(trimedText, "snippet"):
-				block = "snippet"
+				blocks = append(blocks, "snippet")
 			case strings.HasPrefix(trimedText, "vcl"):
-				block = "vcl"
+				blocks = append(blocks, "vcl")
 			case strings.HasPrefix(trimedText, "logging_"):
-				block = "logging"
+				blocks = append(blocks, "logging")
+			default:
+				blocks = append(blocks, "other")
 			}
 		}
 
-		if block == "backend" {
-			switch {
-			case strings.HasSuffix(trimedText, "(sensitive value)"):
-				text = truncateValue(text)
-			}
+		// Skip as we are not in a TF resource block
+		if len(blocks) == 0 {
+			continue
 		}
 
-		if block == "response_object" {
-			switch {
-			case strings.HasPrefix(trimedText, "content "):
-				handleMultilineStrings(trimedText)
-				text = truncateValue(text)
-			}
+		// Closing bracket; clear the block name
+		if trimedText == "}" {
+			blocks = blocks[:len(blocks) - 1]
 		}
 
-		if block == "snippet" {
-			switch {
-			case strings.HasPrefix(trimedText, "content "):
-				handleMultilineStrings(trimedText)
-				text = truncateValue(text)
+		if len(blocks) > 0 {
+			if blocks[len(blocks) - 1] == "backend" {
+				switch {
+				case strings.HasSuffix(trimedText, "(sensitive value)"):
+					text = truncateValue(text)
+				}
 			}
-		}
 
-		if block == "vcl" {
-			switch {
-			case strings.HasPrefix(trimedText, "content "):
-				handleMultilineStrings(trimedText)
-				text = truncateValue(text)
+			if blocks[len(blocks) - 1] == "response_object" {
+				switch {
+				case strings.HasPrefix(trimedText, "content "):
+					handleMultilineStrings(trimedText)
+					text = truncateValue(text)
+				}
 			}
-		}
 
-		if block == "logging" {
-			switch {
-			case strings.HasPrefix(trimedText, "format "):
-				handleMultilineStrings(trimedText)
-				text = truncateValue(text)
-			case strings.HasSuffix(trimedText, "(sensitive value)"):
-				text = truncateValue(text)
+			if blocks[len(blocks) - 1] == "snippet" {
+				switch {
+				case strings.HasPrefix(trimedText, "content "):
+					handleMultilineStrings(trimedText)
+					text = truncateValue(text)
+				}
+			}
+
+			if blocks[len(blocks) - 1] == "vcl" {
+				switch {
+				case strings.HasPrefix(trimedText, "content "):
+					handleMultilineStrings(trimedText)
+					text = truncateValue(text)
+				}
+			}
+
+			if blocks[len(blocks) - 1] == "logging" {
+				switch {
+				case strings.HasPrefix(trimedText, "format "):
+					handleMultilineStrings(trimedText)
+					text = truncateValue(text)
+				case strings.HasSuffix(trimedText, "(sensitive value)"):
+					text = truncateValue(text)
+				}
 			}
 		}
 
