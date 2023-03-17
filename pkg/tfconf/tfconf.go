@@ -222,6 +222,10 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 			if err != nil {
 				return nil, err
 			}
+		// Skip handling unknown resource blocks
+		default:
+			tfconf.Body().RemoveBlock(block)
+			continue
 		}
 	}
 
