@@ -154,21 +154,13 @@ resource "fastly_service_dictionary_items" "redirect_table" {
     service_id    = "7ManTUgtlSytxeXRMPYY33"
 }
 resource "fastly_service_dynamic_snippet_content" "my_dynamic_snippet_one" {
-    content    = <<-EOT
-        if ( req.url ) {
-         set req.http.my-snippet-test-header-one = "true";
-        }
-    EOT
+    content    = ""
     id         = "7ManTUgtlSytxeXRMPYY33/0c9bM9rXXNKq9iDMsmPeuY"
     service_id = "7ManTUgtlSytxeXRMPYY33"
     snippet_id = "0c9bM9rXXNKq9iDMsmPeuY"
 }
 resource "fastly_service_dynamic_snippet_content" "my_dynamic_snippet_two" {
-    content    = <<-EOT
-        if ( req.url ) {
-         set req.http.my-snippet-test-header-two = "true";
-        }
-    EOT
+    content    = ""
     id         = "7ManTUgtlSytxeXRMPYY33/2nsQvKJBGxurwIw44y6JPk"
     service_id = "7ManTUgtlSytxeXRMPYY33"
     snippet_id = "2nsQvKJBGxurwIw44y6JPk"
