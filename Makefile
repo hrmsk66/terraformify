@@ -5,6 +5,9 @@ VERSION := $(shell git describe --tags --abbrev=0)
 LDFLAGS := -ldflags '-s -w -X github.com/hrmsk66/terraformify/cmd.version=$(VERSION)'
 
 test:
+	go test -v ./...
+
+test-local: test
 	cd tests && go test -v -timeout 20m
 
 clean:
