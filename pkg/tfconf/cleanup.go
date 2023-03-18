@@ -35,12 +35,12 @@ func cleanupHCL(rawHCL string) string {
 	// Helper function to check if a given block is a supported Terraform resource block
 	isSupportedResourceBlock := func(block string) bool {
 		supportedBlocks := []string{
-			"\"fastly_service_acl_entries\"",
-			"\"fastly_service_compute\"",
-			"\"fastly_service_dictionary_items\"",
-			"\"fastly_service_dynamic_snippet_content\"",
-			"\"fastly_service_vcl\"",
-			"\"fastly_service_waf_configuration\"",
+			"fastly_service_acl_entries",
+			"fastly_service_compute",
+			"fastly_service_dictionary_items",
+			"fastly_service_dynamic_snippet_content",
+			"fastly_service_vcl",
+			"fastly_service_waf_configuration",
 		}
 
 		for _, supportedBlock := range supportedBlocks {
@@ -70,8 +70,9 @@ func cleanupHCL(rawHCL string) string {
 				// If we're not in a block, check if it's a supported resource block
 				if strings.HasPrefix(trimedText, "resource") {
 					b := strings.Fields(trimedText)[1]
+					b = strings.Trim(b, "\"")
 					if isSupportedResourceBlock(b) {
-						blocks = append(blocks, "resource")
+						blocks = append(blocks, b)
 					}
 				}
 			case 1:
@@ -105,6 +106,14 @@ func cleanupHCL(rawHCL string) string {
 
 		// Special handling for nested blocks
 		if len(blocks) > 0 {
+			if blocks[len(blocks) - 1] == "fastly_service_dynamic_snippet_content" {
+				switch {
+					case strings.HasPrefix(trimedText, "content "):
+						handleMultilineStrings(trimedText)
+						text = truncateValue(text)
+				}
+			}
+
 			if blocks[len(blocks) - 1] == "backend" {
 				switch {
 				case strings.HasSuffix(trimedText, "(sensitive value)"):

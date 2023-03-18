@@ -20,6 +20,7 @@ var vclCmd = &cobra.Command{
 	Use:          "vcl <service-id>",
 	Short:        "Generate TF files for an existing Fastly VCL service",
 	Args:         cobra.ExactArgs(1),
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filter := cli.CreateLogFilter()
 		log.Printf("[INFO] CLI version: %s", getVersion())
