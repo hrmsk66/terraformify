@@ -2,6 +2,10 @@
 
 An experimental CLI that generates TF files to manage existing Fastly services with Terraform
 
+> **Warning**
+> **Known Issue: Incompatibility with Terraform 1.4.6 and Later**<br>
+> Due to a change in the behavior of the Terraform binary, this command does not function properly in environments using Terraform **1.4.6** or later. This issue is due to the tool's dependency on the `terraform show` command. Until this issue is resolved, I recommend using Terraform **1.4.5** or earlier. For more information, see https://github.com/hrmsk66/terraformify/issues/49
+
 https://user-images.githubusercontent.com/30490956/169726673-33ecccf7-ae40-4ebd-acf7-e4d457d4f510.mp4
 
 ## Installation / Upgrade
