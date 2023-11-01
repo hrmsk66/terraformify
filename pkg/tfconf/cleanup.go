@@ -101,27 +101,27 @@ func cleanupHCL(rawHCL string) string {
 
 		// If we find a closing bracket, remove the current block from the list
 		if trimedText == "}" {
-			blocks = blocks[:len(blocks) - 1]
+			blocks = blocks[:len(blocks)-1]
 		}
 
 		// Special handling for nested blocks
 		if len(blocks) > 0 {
-			if blocks[len(blocks) - 1] == "fastly_service_dynamic_snippet_content" {
+			if blocks[len(blocks)-1] == "fastly_service_dynamic_snippet_content" {
 				switch {
-					case strings.HasPrefix(trimedText, "content "):
-						handleMultilineStrings(trimedText)
-						text = truncateValue(text)
+				case strings.HasPrefix(trimedText, "content "):
+					handleMultilineStrings(trimedText)
+					text = truncateValue(text)
 				}
 			}
 
-			if blocks[len(blocks) - 1] == "backend" {
+			if blocks[len(blocks)-1] == "backend" {
 				switch {
 				case strings.HasSuffix(trimedText, "(sensitive value)"):
 					text = truncateValue(text)
 				}
 			}
 
-			if blocks[len(blocks) - 1] == "response_object" {
+			if blocks[len(blocks)-1] == "response_object" {
 				switch {
 				case strings.HasPrefix(trimedText, "content "):
 					handleMultilineStrings(trimedText)
@@ -129,7 +129,7 @@ func cleanupHCL(rawHCL string) string {
 				}
 			}
 
-			if blocks[len(blocks) - 1] == "snippet" {
+			if blocks[len(blocks)-1] == "snippet" {
 				switch {
 				case strings.HasPrefix(trimedText, "content "):
 					handleMultilineStrings(trimedText)
@@ -137,7 +137,7 @@ func cleanupHCL(rawHCL string) string {
 				}
 			}
 
-			if blocks[len(blocks) - 1] == "vcl" {
+			if blocks[len(blocks)-1] == "vcl" {
 				switch {
 				case strings.HasPrefix(trimedText, "content "):
 					handleMultilineStrings(trimedText)
@@ -145,7 +145,7 @@ func cleanupHCL(rawHCL string) string {
 				}
 			}
 
-			if blocks[len(blocks) - 1] == "logging" {
+			if blocks[len(blocks)-1] == "logging" {
 				switch {
 				case strings.HasPrefix(trimedText, "format "):
 					handleMultilineStrings(trimedText)
