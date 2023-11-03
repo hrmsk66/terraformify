@@ -1,7 +1,7 @@
 package tfconf
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -11,13 +11,13 @@ func TestCleanupHCL(t *testing.T) {
 	inputFile := filepath.Join("..", "..", "testdata", "cleanup_input.hcl")
 	expectedOutputFile := filepath.Join("..", "..", "testdata", "cleanup_output.hcl")
 
-	inputBytes, err := ioutil.ReadFile(inputFile)
+	inputBytes, err := os.ReadFile(inputFile)
 	if err != nil {
 		t.Fatalf("Failed to read input file %s: %v", inputFile, err)
 	}
 	input := string(inputBytes)
 
-	expectedOutputBytes, err := ioutil.ReadFile(expectedOutputFile)
+	expectedOutputBytes, err := os.ReadFile(expectedOutputFile)
 	if err != nil {
 		t.Fatalf("Failed to read expected output file %s: %v", expectedOutputFile, err)
 	}

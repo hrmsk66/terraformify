@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"runtime"
 
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hrmsk66/terraformify/pkg/prop"
 )
@@ -31,7 +32,22 @@ func Version(tf *tfexec.Terraform) error {
 		return err
 	}
 
-	log.Printf("[INFO] Terraform version: %s on %s_%s", tfver.String(), runtime.GOOS, runtime.GOARCH)
+	// Check if the version is compatible with 1.4.5 or earlier
+	compatibleVersion, err := version.NewConstraint("<= 1.4.5")
+	if err != nil {
+		return fmt.Errorf("failed to parse version constraint: %s", err)
+	}
+
+	currentVersion, err := version.NewVersion(tfver.String())
+	if err != nil {
+		return fmt.Errorf("failed to parse current Terraform version: %s", err)
+	}
+
+	if !compatibleVersion.Check(currentVersion) {
+		return fmt.Errorf("incompatible Terraform version: %s. Terraform version must be 1.4.5 or earlier", currentVersion)
+	}
+
+	log.Printf("[INFO] Terraform version: %s on %s_%s", currentVersion, runtime.GOOS, runtime.GOARCH)
 	for k, v := range providerVers {
 		log.Printf("[INFO] Provider version: %s %s", k, v.String())
 	}
