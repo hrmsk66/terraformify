@@ -15,6 +15,7 @@ clean:
 
 build: clean
 	go build -trimpath $(LDFLAGS) -o dist/terraformify main.go
+	@echo 'To use your locally built version of terraformify, run: export PATH=$(PWD)/dist:$$PATH'
 
 fmt:
 	gofmt -s -w $(GOFILES)

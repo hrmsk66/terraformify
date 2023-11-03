@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	_ "embed"
 
@@ -132,6 +133,19 @@ func write(file string, content []byte, flag int) error {
 		err = err1
 	}
 	return err
+}
+
+// CheckPackage verifies that the file at the given path exists and is a .tar.gz file.
+func CheckPackage(packagePath string) error {
+	if _, err := os.Stat(packagePath); os.IsNotExist(err) {
+		return err
+	}
+
+	if filepath.Ext(strings.TrimSuffix(packagePath, filepath.Ext(packagePath))) != ".tar" || filepath.Ext(packagePath) != ".gz" {
+		return errors.New("the specified file is not in tar.gz format")
+	}
+
+	return nil
 }
 
 func CheckFile(workingDir, resourceName string) error {

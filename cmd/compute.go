@@ -26,6 +26,12 @@ var computeCmd = &cobra.Command{
 		log.Printf("[INFO] CLI version: %s", getVersion())
 		log.SetOutput(filter)
 
+		packagePath := args[1]
+		err := file.CheckPackage(packagePath)
+		if err != nil {
+			return err
+		}
+
 		workingDir, err := cmd.Flags().GetString("working-dir")
 		if err != nil {
 			return err
@@ -40,6 +46,15 @@ var computeCmd = &cobra.Command{
 			return err
 		}
 
+		resourceName, err := cmd.Flags().GetString("resource-name")
+		if err != nil {
+			return err
+		}
+
+		if err = file.CheckFile(workingDir, resourceName); err != nil {
+			return err
+		}
+
 		apiKey := viper.GetString("api-key")
 		if err = os.Setenv("FASTLY_API_KEY", apiKey); err != nil {
 			return err
@@ -51,11 +66,6 @@ var computeCmd = &cobra.Command{
 		}
 
 		interactive, err := cmd.Flags().GetBool("interactive")
-		if err != nil {
-			return err
-		}
-
-		resourceName, err := cmd.Flags().GetString("resource-name")
 		if err != nil {
 			return err
 		}
@@ -77,7 +87,7 @@ var computeCmd = &cobra.Command{
 
 		c := cli.Config{
 			ID:            args[0],
-			Package:       args[1],
+			Package:       packagePath,
 			ResourceName:  resourceName,
 			Version:       version,
 			Directory:     workingDir,
@@ -103,6 +113,11 @@ func ImportCompute(c cli.Config) error {
 		return err
 	}
 
+	// Run "terraform version"
+	if err = terraform.Version(tf); err != nil {
+		return err
+	}
+
 	// Create provider.tf
 	// Create temp*.tf with empty service resource blocks
 	log.Printf("[INFO] Creating provider.tf and temp*.tf")
@@ -114,11 +129,6 @@ func ImportCompute(c cli.Config) error {
 	// Run "terraform init"
 	log.Printf(`[INFO] Running "terraform init"`)
 	if err = terraform.Init(tf); err != nil {
-		return err
-	}
-
-	// Run "terraform version"
-	if err = terraform.Version(tf); err != nil {
 		return err
 	}
 
@@ -139,7 +149,6 @@ func ImportCompute(c cli.Config) error {
 
 	// Parse HCL and obtain Terraform block props as a list of struct
 	// to get the overall picture of the service configuration
-	// log.Print("[INFO] Parsing the HCL to get an overall picture of the service configuration")
 	log.Print("[INFO] Parsing the HCL")
 	hcl, err := tfconf.Load(rawHCL)
 	if err != nil {

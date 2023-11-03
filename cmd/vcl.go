@@ -106,6 +106,11 @@ func ImportVCL(c cli.Config) error {
 		return err
 	}
 
+	// Run "terraform version"
+	if err = terraform.Version(tf); err != nil {
+		return err
+	}
+
 	// Create provider.tf
 	// Create temp*.tf with empty service resource blocks
 	log.Printf("[INFO] Creating provider.tf and temp*.tf")
@@ -117,11 +122,6 @@ func ImportVCL(c cli.Config) error {
 	// Run "terraform init"
 	log.Printf(`[INFO] Running "terraform init"`)
 	if err = terraform.Init(tf); err != nil {
-		return err
-	}
-
-	// Run "terraform version"
-	if err = terraform.Version(tf); err != nil {
 		return err
 	}
 
@@ -142,7 +142,6 @@ func ImportVCL(c cli.Config) error {
 
 	// Parse HCL and obtain Terraform block props as a list of struct
 	// to get the overall picture of the service configuration
-	// log.Print("[INFO] Parsing the HCL to get an overall picture of the service configuration")
 	log.Print("[INFO] Parsing the HCL")
 	hcl, err := tfconf.Load(rawHCL)
 	if err != nil {

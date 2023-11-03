@@ -162,6 +162,8 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				continue
 			}
 
+			appendFastlyPackageHashBlock(tfconf, serviceProp, c)
+
 			sensitiveAttrs, err = rewriteComputeServiceResource(block, serviceProp, state, c)
 			if err != nil {
 				return nil, err
@@ -583,10 +585,10 @@ func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlo
 		case "product_enablement":
 			nestedBody.RemoveAttribute("name")
 		case "package":
-			nestedBody.SetAttributeValue("filename", cty.StringVal(c.Package))
-
-			tokens := buildFilesha512Function(c.Package)
-			nestedBody.SetAttributeRaw("source_code_hash", tokens)
+			nestedBody.SetAttributeTraversal("filename", buildPackageHashRef(serviceProp.GetNormalizedName(), "filename"))
+			nestedBody.SetAttributeTraversal("source_code_hash", buildPackageHashRef(serviceProp.GetNormalizedName(), "hash"))
+		case "resource_link":
+			nestedBody.RemoveAttribute("link_id")
 		case "backend":
 			name, err := getStringAttributeValue(block, "name")
 			if err != nil {
@@ -840,6 +842,12 @@ func rewriteWAFResource(block *hclwrite.Block, serviceProp prop.TFBlock) error {
 	return nil
 }
 
+func appendFastlyPackageHashBlock(tfconf *TFConf, serviceProp prop.TFBlock, config *cli.Config) {
+	tfconf.Body().AppendNewline()
+	p := tfconf.Body().AppendNewBlock("data", []string{"fastly_package_hash", serviceProp.GetNormalizedName()})
+	p.Body().SetAttributeValue("filename", cty.StringVal(config.Package))
+}
+
 func getStringAttributeValue(block *hclwrite.Block, attrKey string) (string, error) {
 	// find TokenQuotedLit
 	attr := block.Body().GetAttribute(attrKey)
@@ -936,6 +944,15 @@ func buildVariableRef(varName string) hcl.Traversal {
 	return hcl.Traversal{
 		hcl.TraverseRoot{Name: "var"},
 		hcl.TraverseAttr{Name: varName},
+	}
+}
+
+func buildPackageHashRef(resourceName, attr string) hcl.Traversal {
+	return hcl.Traversal{
+		hcl.TraverseRoot{Name: "data"},
+		hcl.TraverseAttr{Name: "fastly_package_hash"},
+		hcl.TraverseAttr{Name: resourceName},
+		hcl.TraverseAttr{Name: attr},
 	}
 }
 
