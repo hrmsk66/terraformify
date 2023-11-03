@@ -10,7 +10,7 @@ require (
 	github.com/itchyny/gojq v0.12.13
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
-	github.com/zclconf/go-cty v1.14.0
+	github.com/zclconf/go-cty v1.14.1
 )
 
 require (
