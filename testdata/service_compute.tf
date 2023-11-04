@@ -49,15 +49,15 @@ resource "fastly_service_compute" "service" {
   }
 
   package {
-    source_code_hash = filesha512("package.tar.gz")
-    filename         = "package.tar.gz"
+    source_code_hash = data.fastly_package_hash.service.hash
+    filename         = data.fastly_package_hash.service.filename
   }
 
-  product_enablement {
-    fanout     = false
-    websockets = false
-  }
   comment = ""
+}
+
+data "fastly_package_hash" "service" {
+  filename = "package.tar.gz"
 }
 
 resource "fastly_service_dictionary_items" "dict1" {

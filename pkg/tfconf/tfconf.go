@@ -116,6 +116,17 @@ func (tfconf *TFConf) ParseServiceResource(serviceProp prop.TFBlock, c *cli.Conf
 				}
 				prop := prop.NewDynamicSnippetResource(id, name, serviceProp)
 				props = append(props, prop)
+			case "resource_link":
+				id, err := getStringAttributeValue(block, "resource_id")
+				if err != nil {
+					return nil, err
+				}
+				name, err := getStringAttributeValue(block, "name")
+				if err != nil {
+					return nil, err
+				}
+				prop := prop.NewLinkedResource(id, name, serviceProp)
+				props = append(props, prop)
 			}
 		}
 		return props, nil
@@ -123,7 +134,7 @@ func (tfconf *TFConf) ParseServiceResource(serviceProp prop.TFBlock, c *cli.Conf
 	return nil, errors.New("tfconf: target service resource not found")
 }
 
-func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) ([]SensitiveAttr, error) {
+func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, props []prop.TFBlock, c *cli.Config) ([]SensitiveAttr, error) {
 	// Read terraform.tfstate into the variable
 	state, err := tfstate.Load(c.Directory)
 	if err != nil {
@@ -137,9 +148,10 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 			return nil, fmt.Errorf("unexpected block type: %v", t)
 		}
 
+		var id string
 		switch block.Labels()[0] {
 		case "fastly_service_vcl":
-			id, err := getStringAttributeValue(block, "id")
+			id, err = getStringAttributeValue(block, "id")
 			if err != nil {
 				return nil, err
 			}
@@ -153,7 +165,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				return nil, err
 			}
 		case "fastly_service_compute":
-			id, err := getStringAttributeValue(block, "id")
+			id, err = getStringAttributeValue(block, "id")
 			if err != nil {
 				return nil, err
 			}
@@ -162,7 +174,17 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, c *cli.Config) 
 				continue
 			}
 
-			sensitiveAttrs, err = rewriteComputeServiceResource(block, serviceProp, state, c)
+			// Add "fastly_package_hash" data block
+			appendFastlyPackageHashBlock(tfconf, serviceProp, c)
+
+			sensitiveAttrs, err = rewriteComputeServiceResource(block, serviceProp, props, state, c)
+			if err != nil {
+				return nil, err
+			}
+		case "fastly_configstore", "fastly_secretstore", "fastly_kvstore":
+			rewriteLinkedResource(block)
+		case "fastly_configstore_entries":
+			err = rewriteConfigStoreEntries(block, props, c)
 			if err != nil {
 				return nil, err
 			}
@@ -536,7 +558,7 @@ func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 	return sensitiveAttrs, nil
 }
 
-func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) ([]SensitiveAttr, error) {
+func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, props []prop.TFBlock, s *tfstate.TFState, c *cli.Config) ([]SensitiveAttr, error) {
 	var sensitiveAttrs []SensitiveAttr
 
 	st, err := s.AddTemplate(tfstate.ServiceQueryTmplate)
@@ -583,10 +605,21 @@ func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlo
 		case "product_enablement":
 			nestedBody.RemoveAttribute("name")
 		case "package":
-			nestedBody.SetAttributeValue("filename", cty.StringVal(c.Package))
-
-			tokens := buildFilesha512Function(c.Package)
-			nestedBody.SetAttributeRaw("source_code_hash", tokens)
+			nestedBody.SetAttributeTraversal("filename", buildPackageHashRef(serviceProp, "filename"))
+			nestedBody.SetAttributeTraversal("source_code_hash", buildPackageHashRef(serviceProp, "hash"))
+		case "resource_link":
+			resourceId, err := getStringAttributeValue(block, "resource_id")
+			if err != nil {
+				return nil, err
+			}
+			for _, prop := range props {
+				if prop.GetID() == resourceId {
+					nestedBody.SetAttributeTraversal("name", buildResourceRef(prop, "name"))
+					nestedBody.SetAttributeTraversal("resource_id", buildResourceRef(prop, "id"))
+					break
+				}
+			}
+			nestedBody.RemoveAttribute("link_id")
 		case "backend":
 			name, err := getStringAttributeValue(block, "name")
 			if err != nil {
@@ -689,6 +722,35 @@ func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlo
 	}
 
 	return sensitiveAttrs, nil
+}
+
+func rewriteLinkedResource(block *hclwrite.Block) {
+	// remove read-only attributes
+	body := block.Body()
+	body.RemoveAttribute("id")
+}
+
+func rewriteConfigStoreEntries(block *hclwrite.Block, props []prop.TFBlock, c *cli.Config) error {
+	// remove read-only attributes
+	body := block.Body()
+	body.RemoveAttribute("id")
+
+	storeId, err := getStringAttributeValue(block, "store_id")
+	if err != nil {
+		return err
+	}
+	for _, prop := range props {
+		if prop.GetID() == storeId {
+			body.SetAttributeTraversal("store_id", buildResourceRef(prop, "id"))
+			break
+		}
+	}
+
+	if c.ManageAll {
+		body.SetAttributeValue("manage_entries", cty.BoolVal(true))
+	}
+
+	return nil
 }
 
 func rewriteACLResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) error {
@@ -840,6 +902,12 @@ func rewriteWAFResource(block *hclwrite.Block, serviceProp prop.TFBlock) error {
 	return nil
 }
 
+func appendFastlyPackageHashBlock(tfconf *TFConf, serviceProp prop.TFBlock, config *cli.Config) {
+	tfconf.Body().AppendNewline()
+	p := tfconf.Body().AppendNewBlock("data", []string{"fastly_package_hash", serviceProp.GetNormalizedName()})
+	p.Body().SetAttributeValue("filename", cty.StringVal(config.Package))
+}
+
 func getStringAttributeValue(block *hclwrite.Block, attrKey string) (string, error) {
 	// find TokenQuotedLit
 	attr := block.Body().GetAttribute(attrKey)
@@ -936,6 +1004,23 @@ func buildVariableRef(varName string) hcl.Traversal {
 	return hcl.Traversal{
 		hcl.TraverseRoot{Name: "var"},
 		hcl.TraverseAttr{Name: varName},
+	}
+}
+
+func buildPackageHashRef(prop prop.TFBlock, attr string) hcl.Traversal {
+	return hcl.Traversal{
+		hcl.TraverseRoot{Name: "data"},
+		hcl.TraverseAttr{Name: "fastly_package_hash"},
+		hcl.TraverseAttr{Name: prop.GetNormalizedName()},
+		hcl.TraverseAttr{Name: attr},
+	}
+}
+
+func buildResourceRef(prop prop.TFBlock, attr string) hcl.Traversal {
+	return hcl.Traversal{
+		hcl.TraverseRoot{Name: prop.GetType()},
+		hcl.TraverseAttr{Name: prop.GetNormalizedName()},
+		hcl.TraverseAttr{Name: attr},
 	}
 }
 

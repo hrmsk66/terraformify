@@ -106,6 +106,7 @@ func TestImportService(t *testing.T) {
 		{"vcl", "service_dynamic_snippet.tf", 3},
 		{"vcl", "service_waf.tf", 2},
 		{"compute", "service_compute.tf", 3},
+		{"compute", "service_compute_datastores.tf", 5},
 	}
 
 	for _, tc := range testCases {

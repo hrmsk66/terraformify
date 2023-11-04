@@ -106,6 +106,11 @@ func ImportVCL(c cli.Config) error {
 		return err
 	}
 
+	// Run "terraform version"
+	if err = terraform.Version(tf); err != nil {
+		return err
+	}
+
 	// Create provider.tf
 	// Create temp*.tf with empty service resource blocks
 	log.Printf("[INFO] Creating provider.tf and temp*.tf")
@@ -120,15 +125,9 @@ func ImportVCL(c cli.Config) error {
 		return err
 	}
 
-	// Run "terraform version"
-	if err = terraform.Version(tf); err != nil {
-		return err
-	}
-
 	// Create VCLServiceResourceProp struct
 	serviceProp := prop.NewVCLServiceResource(c.ID, c.ResourceName, c.Version)
 
-	log.Printf(`[INFO] Running "terraform import" on %s`, serviceProp.GetRef())
 	if err = terraform.Import(tf, serviceProp, tempf); err != nil {
 		return err
 	}
@@ -142,7 +141,6 @@ func ImportVCL(c cli.Config) error {
 
 	// Parse HCL and obtain Terraform block props as a list of struct
 	// to get the overall picture of the service configuration
-	// log.Print("[INFO] Parsing the HCL to get an overall picture of the service configuration")
 	log.Print("[INFO] Parsing the HCL")
 	hcl, err := tfconf.Load(rawHCL)
 	if err != nil {
@@ -166,7 +164,6 @@ func ImportVCL(c cli.Config) error {
 				}
 			}
 
-			log.Printf(`[INFO] Running "terraform import" on %s`, p.GetRef())
 			if err = terraform.Import(tf, p, tempf); err != nil {
 				return err
 			}
@@ -196,7 +193,7 @@ func ImportVCL(c cli.Config) error {
 		return err
 	}
 
-	sensitiveAttrs, err := hcl.RewriteResources(serviceProp, &c)
+	sensitiveAttrs, err := hcl.RewriteResources(serviceProp, props, &c)
 	if err != nil {
 		return err
 	}
