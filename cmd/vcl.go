@@ -128,7 +128,6 @@ func ImportVCL(c cli.Config) error {
 	// Create VCLServiceResourceProp struct
 	serviceProp := prop.NewVCLServiceResource(c.ID, c.ResourceName, c.Version)
 
-	log.Printf(`[INFO] Running "terraform import" on %s`, serviceProp.GetRef())
 	if err = terraform.Import(tf, serviceProp, tempf); err != nil {
 		return err
 	}
@@ -165,7 +164,6 @@ func ImportVCL(c cli.Config) error {
 				}
 			}
 
-			log.Printf(`[INFO] Running "terraform import" on %s`, p.GetRef())
 			if err = terraform.Import(tf, p, tempf); err != nil {
 				return err
 			}
@@ -195,7 +193,7 @@ func ImportVCL(c cli.Config) error {
 		return err
 	}
 
-	sensitiveAttrs, err := hcl.RewriteResources(serviceProp, &c)
+	sensitiveAttrs, err := hcl.RewriteResources(serviceProp, props, &c)
 	if err != nil {
 		return err
 	}

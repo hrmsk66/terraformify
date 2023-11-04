@@ -18,6 +18,7 @@ resource "fastly_service_acl_entries" "allow_list" {
         subnet  = "24"
     }
 }
+
 resource "fastly_service_acl_entries" "generated_by_ip_block_list" {
     acl_id     = "6MLU7aw4UL8B3BRfM7W3qd"
     id         = "7ManTUgtlSytxeXRMPYY33/6MLU7aw4UL8B3BRfM7W3qd"
@@ -34,6 +35,7 @@ resource "fastly_service_acl_entries" "generated_by_ip_block_list" {
         negated = false
     }
 }
+
 resource "fastly_service_compute" "another_service" {
     activate        = true
     active_version  = 1
@@ -111,6 +113,7 @@ resource "fastly_service_compute" "another_service" {
         websockets = false
     }
 }
+
 resource "fastly_service_dictionary_items" "config_table" {
     dictionary_id = "5IQqUYjc3uLtIBWtcMflfO"
     id            = "7ManTUgtlSytxeXRMPYY33/5IQqUYjc3uLtIBWtcMflfO"
@@ -120,6 +123,7 @@ resource "fastly_service_dictionary_items" "config_table" {
     }
     service_id    = "7ManTUgtlSytxeXRMPYY33"
 }
+
 resource "fastly_service_dictionary_items" "dict1" {
     dictionary_id = "hDwOlMF30jFTAKc4b8YEe1"
     id            = "acmkdz3lPfaQZgxVAkNhA4/hDwOlMF30jFTAKc4b8YEe1"
@@ -137,12 +141,14 @@ resource "fastly_service_dictionary_items" "dict1" {
     }
     service_id    = "acmkdz3lPfaQZgxVAkNhA4"
 }
+
 resource "fastly_service_dictionary_items" "dict2" {
     dictionary_id = "vesv9C8FaGsHV8RYDSgdO2"
     id            = "acmkdz3lPfaQZgxVAkNhA4/vesv9C8FaGsHV8RYDSgdO2"
     items         = {}
     service_id    = "acmkdz3lPfaQZgxVAkNhA4"
 }
+
 resource "fastly_service_dictionary_items" "redirect_table" {
     dictionary_id = "1Gg1ElOSFQE1CqmZI0QkTR"
     id            = "7ManTUgtlSytxeXRMPYY33/1Gg1ElOSFQE1CqmZI0QkTR"
@@ -153,18 +159,21 @@ resource "fastly_service_dictionary_items" "redirect_table" {
     }
     service_id    = "7ManTUgtlSytxeXRMPYY33"
 }
+
 resource "fastly_service_dynamic_snippet_content" "my_dynamic_snippet_one" {
     content    = ""
     id         = "7ManTUgtlSytxeXRMPYY33/0c9bM9rXXNKq9iDMsmPeuY"
     service_id = "7ManTUgtlSytxeXRMPYY33"
     snippet_id = "0c9bM9rXXNKq9iDMsmPeuY"
 }
+
 resource "fastly_service_dynamic_snippet_content" "my_dynamic_snippet_two" {
     content    = ""
     id         = "7ManTUgtlSytxeXRMPYY33/2nsQvKJBGxurwIw44y6JPk"
     service_id = "7ManTUgtlSytxeXRMPYY33"
     snippet_id = "2nsQvKJBGxurwIw44y6JPk"
 }
+
 resource "fastly_service_vcl" "service" {
     activate           = true
     active_version     = 2
@@ -489,6 +498,7 @@ resource "fastly_service_vcl" "service" {
         waf_id             = "5zUgOENkpc4KBadCXYSx3q"
     }
 }
+
 resource "fastly_service_waf_configuration" "waf" {
     activate                             = true
     active                               = true

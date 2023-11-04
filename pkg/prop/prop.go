@@ -1,6 +1,7 @@
 package prop
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/hrmsk66/terraformify/pkg/naming"
@@ -13,6 +14,11 @@ type TFBlock interface {
 	GetName() string
 	GetNormalizedName() string
 	GetRef() string
+}
+
+type MutatableTfBlock interface {
+	TFBlock
+	MutateType() error
 }
 
 type ComputeServiceResource struct {
@@ -226,4 +232,69 @@ func (ds *DynamicSnippetResource) GetNormalizedName() string {
 }
 func (ds *DynamicSnippetResource) GetRef() string {
 	return ds.GetType() + "." + ds.GetNormalizedName()
+}
+
+type LinkedResource struct {
+	ServiceResource TFBlock
+	ID              string
+	Name            string
+	Type            string
+}
+
+var ErrNoMoreResourceType = errors.New("no more linked resource type")
+var ErrUnknownResourceType = errors.New("unknown linked resource type")
+var ErrNoEntriesToImport = errors.New("no entries to import")
+
+func NewLinkedResource(id, name string, sr TFBlock) *LinkedResource {
+	return &LinkedResource{
+		ServiceResource: sr,
+		ID:              id,
+		Name:            name,
+		Type:            "fastly_configstore",
+	}
+}
+func (l *LinkedResource) GetType() string {
+	return l.Type
+}
+func (l *LinkedResource) GetID() string {
+	return l.ID
+}
+func (l *LinkedResource) GetIDforTFImport() string {
+	return l.ID
+}
+func (l *LinkedResource) GetName() string {
+	return l.Name
+}
+func (l *LinkedResource) GetNormalizedName() string {
+	return naming.Normalize(l.GetName())
+}
+func (l *LinkedResource) GetRef() string {
+	return l.GetType() + "." + l.GetNormalizedName()
+}
+func (l *LinkedResource) MutateType() error {
+	switch l.Type {
+	case "fastly_configstore":
+		l.Type = "fastly_secretstore"
+	case "fastly_secretstore":
+		l.Type = "fastly_kvstore"
+	case "fastly_kvstore":
+		return ErrNoMoreResourceType
+	default:
+		return ErrUnknownResourceType
+	}
+
+	return nil
+}
+func (l *LinkedResource) CloneForEntriesImport() (*LinkedResource, error) {
+	switch l.Type {
+	case "fastly_configstore":
+		return &LinkedResource{
+			ServiceResource: l.ServiceResource,
+			ID:              l.ID + "/entries",
+			Name:            l.Name,
+			Type:            l.Type + "_entries",
+		}, nil
+	default:
+		return nil, ErrNoEntriesToImport
+	}
 }

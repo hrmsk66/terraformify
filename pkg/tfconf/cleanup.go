@@ -41,6 +41,10 @@ func cleanupHCL(rawHCL string) string {
 			"fastly_service_dynamic_snippet_content",
 			"fastly_service_vcl",
 			"fastly_service_waf_configuration",
+			"fastly_configstore",
+			"fastly_configstore_entries",
+			"fastly_secretstore",
+			"fastly_kvstore",
 		}
 
 		for _, supportedBlock := range supportedBlocks {
@@ -60,6 +64,12 @@ func cleanupHCL(rawHCL string) string {
 			if trimedText == eot {
 				skip = false
 			}
+			continue
+		}
+
+		// Check for empty line and preserve it
+		if trimedText == "" {
+			buf.WriteString(text + "\n")
 			continue
 		}
 

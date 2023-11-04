@@ -135,7 +135,6 @@ func ImportCompute(c cli.Config) error {
 	// Create VCLServiceResourceProp struct
 	serviceProp := prop.NewComputeServiceResource(c.ID, c.ResourceName, c.Version)
 
-	log.Printf(`[INFO] Running "terraform import" on %s`, serviceProp.GetRef())
 	if err = terraform.Import(tf, serviceProp, tempf); err != nil {
 		return err
 	}
@@ -160,10 +159,10 @@ func ImportCompute(c cli.Config) error {
 		return err
 	}
 
-	// Iterate over the list of props and run terraform import for WAF, ACL/dictionary items, and dynamic snippets
+	// Iterate over the list of props and run terraform import for Dictionary items
 	for _, p := range props {
 		switch p := p.(type) {
-		case *prop.WAFResource, *prop.ACLResource, *prop.DictionaryResource, *prop.DynamicSnippetResource:
+		case *prop.DictionaryResource:
 			// Ask yes/no if in interactive mode
 			if c.Interactive {
 				yes := cli.YesNo(fmt.Sprintf("import %s? ", p.GetRef()))
@@ -172,9 +171,22 @@ func ImportCompute(c cli.Config) error {
 				}
 			}
 
-			log.Printf(`[INFO] Running "terraform import" on %s`, p.GetRef())
 			if err = terraform.Import(tf, p, tempf); err != nil {
 				return err
+			}
+		case *prop.LinkedResource:
+			err = terraform.RecursiveImport(tf, p, tempf)
+			if err != nil {
+				return err
+			}
+
+			var entries *prop.LinkedResource
+			entries, err = p.CloneForEntriesImport()
+			if err == nil {
+				err = terraform.Import(tf, entries, tempf)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -202,7 +214,7 @@ func ImportCompute(c cli.Config) error {
 		return err
 	}
 
-	sensitiveAttrs, err := hcl.RewriteResources(serviceProp, &c)
+	sensitiveAttrs, err := hcl.RewriteResources(serviceProp, props, &c)
 	if err != nil {
 		return err
 	}
@@ -273,7 +285,7 @@ func ImportCompute(c cli.Config) error {
 
 		for _, p := range props {
 			switch p := p.(type) {
-			case *prop.ACLResource, *prop.DictionaryResource, *prop.DynamicSnippetResource:
+			case *prop.DictionaryResource:
 				log.Printf(`[INFO] Inserting "index_key" in terraform.tfstate for %s`, p.GetRef())
 				newState, err = newState.SetIndexKey(tfstate.SetIndexKeyParams{
 					ServiceId:    c.ID,

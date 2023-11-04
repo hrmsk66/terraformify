@@ -7,6 +7,7 @@ import (
 	"log"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -61,11 +62,37 @@ func Import(tf *tfexec.Terraform, p prop.TFBlock, f io.Writer) error {
 		return err
 	}
 
+	log.Printf(`[INFO] Running "terraform import" on %s`, p.GetRef())
 	// Run "terraform import"
 	if err := tf.Import(context.Background(), p.GetRef(), p.GetIDforTFImport()); err != nil {
 		return err
 	}
 
+	return nil
+}
+
+// RecursiveImport attempts to import resources specified in the resource_link block of fastly_service_compute.
+// As the resource_link lacks resource type information, this function iteratively tries to import using different
+// resource types until it succeeds.
+func RecursiveImport(tf *tfexec.Terraform, p prop.MutatableTfBlock, f io.Writer) error {
+	err := Import(tf, p, f)
+
+	if err != nil {
+		// Importing non-existent data stores leads to varying outcomes based on their type:
+		// - A non-existent fastly_configstore yields an error with "Cannot import non-existent remote object"
+		// - A non-existent fastly_secretstore results in an error with "404 - Not Found"
+		// - Surprisingly, a terraform import may succeed for a non-existent fastly_kvstore
+		// To prevent erroneous state entries from non-existent resources, TFBlockProp.LinkedResource sequentially tries to import as:
+		// "fastly_configstore" => "fastly_secretstore" => "fastly_kvstore".
+		if strings.Contains(err.Error(), "Cannot import non-existent remote object") || strings.Contains(err.Error(), "404 - Not Found") {
+			if mutateErr := p.MutateType(); mutateErr != nil {
+				return mutateErr
+			}
+			log.Printf(`[INFO] - not found, retry with "%s"`, p.GetRef())
+			return RecursiveImport(tf, p, f)
+		}
+		return err
+	}
 	return nil
 }
 
