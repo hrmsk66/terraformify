@@ -143,6 +143,7 @@ func TestImportService(t *testing.T) {
 				Package:      packageFile,
 				Directory:    testDirPath,
 				ForceDestroy: true,
+				TestMode:     true,
 			}
 
 			if tc.resourceType == "vcl" {

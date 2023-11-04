@@ -40,10 +40,10 @@ The generated files and directories will be named after the TF resource being im
 
 ### Interactive Mode
 
-By default, the tool imports all resources associated with the service, such as ACL entries, dictionary items, WAF..etc. To interactively select which resources to import, use the `--interactive` or `-i` flag.
+By default, the tool imports all resources associated with the service, such as ACL entries, dictionary items, WAF..etc. To interactively select which resources to import, use the `--interactive` or `-i` flag. Interactive mode is only for VCL services and does not work for Compute services.
 
 ```
-terraformify service (vcl|compute) <service-id> [<path-to-package>] -i
+terraformify service vcl <service-id> -i
 ```
 
 ### Importing Specific Version
@@ -82,7 +82,8 @@ terraformify service (vcl|compute) <service-id> [<path-to-package>] -m
 
 By default, the tool updates `terraform.tfstate` directly. To disable this behavior and leave the state file untouched, use the `--skip-edit-state` or `-s` flag.
 
-**Note:** Terraform detects diffs without this behavior and `terraform apply` may result in the destruction and re-creation of associated resources, such as ACL entries and Dictionary items.
+> [!IMPORTANT]
+> This flag is intended for debugging purposes. Without updating the state file, Terraform detects diffs and `terraform apply` may result in the destruction and re-creation of associated resources, such as ACL entries and Dictionary items.
 
 ```
 terraformify service (vcl|compute) <service-id> [<path-to-package>] -s

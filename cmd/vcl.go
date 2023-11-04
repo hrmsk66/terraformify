@@ -79,6 +79,11 @@ var vclCmd = &cobra.Command{
 			return err
 		}
 
+		testMode, err := cmd.Flags().GetBool("test-mode")
+		if err != nil {
+			return err
+		}
+
 		c := cli.Config{
 			ID:            args[0],
 			ResourceName:  resourceName,
@@ -88,6 +93,7 @@ var vclCmd = &cobra.Command{
 			ManageAll:     manageAll,
 			ForceDestroy:  forceDestroy,
 			SkipEditState: skipEditState,
+			TestMode:      testMode,
 		}
 
 		return ImportVCL(c)
@@ -96,6 +102,7 @@ var vclCmd = &cobra.Command{
 
 func init() {
 	serviceCmd.AddCommand(vclCmd)
+	vclCmd.Flags().BoolP("interactive", "i", false, "Interactively select associated resources to import")
 }
 
 func ImportVCL(c cli.Config) error {
