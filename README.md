@@ -34,7 +34,7 @@ Run `terraformify` command in an empty directory or in an existing TF directory.
 terraformify service vcl <service-id>
 ```
 
-### Importing Compute@Edge Service
+### Importing Compute Service
 
 For Compute services, provide the service ID and the path to the WASM package as arguments:
 
