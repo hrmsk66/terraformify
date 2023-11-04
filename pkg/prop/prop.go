@@ -271,6 +271,9 @@ func (l *LinkedResource) GetNormalizedName() string {
 func (l *LinkedResource) GetRef() string {
 	return l.GetType() + "." + l.GetNormalizedName()
 }
+func (l *LinkedResource) SetDataStoreType(t string) {
+	l.Type = t
+}
 func (l *LinkedResource) MutateType() error {
 	switch l.Type {
 	case "fastly_configstore":

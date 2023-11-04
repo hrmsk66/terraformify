@@ -47,10 +47,11 @@ func init() {
 	// Persistent flags
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.terraformify.yaml)")
 	rootCmd.PersistentFlags().StringP("working-dir", "d", ".", "Terraform working directory")
-	rootCmd.PersistentFlags().BoolP("interactive", "i", false, "Interactively select associated resources to import")
 	rootCmd.PersistentFlags().StringP("api-key", "k", "", "Fastly API token (or via FASTLY_API_KEY)")
 	rootCmd.PersistentFlags().BoolP("skip-edit-state", "s", false, "Skip editing terraform.tfstate and leave it untouched (Note: Diffs will be detected on terraform plan/apply)")
 	rootCmd.PersistentFlags().BoolP("yes", "y", false, "Answer yes automatically to all Yes/No confirmations")
+	rootCmd.PersistentFlags().BoolP("test-mode", "t", false, "Test mode (For automated testing)")
+	rootCmd.PersistentFlags().Lookup("test-mode").Hidden = true
 
 	// Associate --token with the env ver, FASTLY_API_KEY
 	replacer := strings.NewReplacer("-", "_")

@@ -65,11 +65,6 @@ var computeCmd = &cobra.Command{
 			return err
 		}
 
-		interactive, err := cmd.Flags().GetBool("interactive")
-		if err != nil {
-			return err
-		}
-
 		manageAll, err := cmd.Flags().GetBool("manage-all")
 		if err != nil {
 			return err
@@ -85,16 +80,21 @@ var computeCmd = &cobra.Command{
 			return err
 		}
 
+		testMode, err := cmd.Flags().GetBool("test-mode")
+		if err != nil {
+			return err
+		}
+
 		c := cli.Config{
 			ID:            args[0],
 			Package:       packagePath,
 			ResourceName:  resourceName,
 			Version:       version,
 			Directory:     workingDir,
-			Interactive:   interactive,
 			ManageAll:     manageAll,
 			ForceDestroy:  forceDestroy,
 			SkipEditState: skipEditState,
+			TestMode:      testMode,
 		}
 
 		return ImportCompute(c)
@@ -163,28 +163,27 @@ func ImportCompute(c cli.Config) error {
 	for _, p := range props {
 		switch p := p.(type) {
 		case *prop.DictionaryResource:
-			// Ask yes/no if in interactive mode
-			if c.Interactive {
-				yes := cli.YesNo(fmt.Sprintf("import %s? ", p.GetRef()))
-				if !yes {
-					continue
-				}
-			}
-
 			if err = terraform.Import(tf, p, tempf); err != nil {
 				return err
 			}
 		case *prop.LinkedResource:
-			err = terraform.RecursiveImport(tf, p, tempf)
-			if err != nil {
-				return err
+			if c.TestMode {
+				if err = terraform.RecursiveImport(tf, p, tempf); err != nil {
+					return err
+				}
+			} else {
+				t := cli.AskDataStoreType(p.GetName())
+				p.SetDataStoreType(t)
+
+				if err = terraform.Import(tf, p, tempf); err != nil {
+					return err
+				}
 			}
 
 			var entries *prop.LinkedResource
 			entries, err = p.CloneForEntriesImport()
 			if err == nil {
-				err = terraform.Import(tf, entries, tempf)
-				if err != nil {
+				if err = terraform.Import(tf, entries, tempf); err != nil {
 					return err
 				}
 			}

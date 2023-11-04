@@ -2,9 +2,11 @@ package cli
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/fatih/color"
@@ -22,6 +24,7 @@ type Config struct {
 	ManageAll     bool
 	ForceDestroy  bool
 	SkipEditState bool
+	TestMode      bool
 }
 
 var Bold = color.New(color.Bold).SprintFunc()
@@ -60,6 +63,39 @@ func YesNo(message string) bool {
 			return true
 		} else if response == "n" || response == "no" {
 			return false
+		}
+	}
+}
+
+// DataStoreType prompts the user to select a number for a Data Store type and returns the corresponding TF resource name.
+// 1 for Config Store, 2 for Secret Store, and 3 for KV Store. It keeps prompting if the input is invalid.
+func AskDataStoreType(resource string) string {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		BoldYellowf(os.Stderr, `"%s" - Select Data Store Type:
+	1: Config Store
+	2: Secret Store
+	3: KV Store
+	Enter number: `, resource)
+
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		response = strings.TrimSpace(response)
+		choice, _ := strconv.Atoi(response)
+
+		switch choice {
+		case 1:
+			return "fastly_configstore"
+		case 2:
+			return "fastly_secretstore"
+		case 3:
+			return "fastly_kvstore"
+		default:
+			fmt.Fprintf(os.Stderr, "\n")
 		}
 	}
 }
