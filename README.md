@@ -48,6 +48,14 @@ For more detailed usage instructions, including available flags and commands, se
 
 `terraformify` supports the import of both Compute and VCL services, along with their associated resources. The following resources are supported:
 
+### Supported Resources for VCL
+
+- [fastly_service_vcl](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_vcl)
+- [fastly_service_acl_entries](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_acl_entries)
+- [fastly_service_dictionary_items](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_dictionary_items)
+- [fastly_service_dynamic_snippet_content](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_dynamic_snippet_content)
+- [fastly_service_waf_configuration](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_waf_configuration)
+
 ### Supported Resources for Compute
 
 - [fastly_service_compute](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_compute)
@@ -56,14 +64,6 @@ For more detailed usage instructions, including available flags and commands, se
 - [fastly_secretstore](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/secretstore)
 - [fastly_kvstore](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/kvstore)
 - [fastly_service_dictionary_items](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_dictionary_items)
-
-### Supported Resources for VCL
-
-- [fastly_service_vcl](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_vcl)
-- [fastly_service_acl_entries](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_acl_entries)
-- [fastly_service_dictionary_items](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_dictionary_items)
-- [fastly_service_dynamic_snippet_content](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_dynamic_snippet_content)
-- [fastly_service_waf_configuration](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_waf_configuration)
 
 ## License
 
