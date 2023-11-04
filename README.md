@@ -4,13 +4,7 @@ An experimental CLI that generates Terraform files for managing existing Fastly 
 
 > [!IMPORTANT]
 > **Known Issue: Incompatibility with Terraform 1.4.6 and Later**<br>
-> `terraformify` is incompatible with Terraform 1.4.6 and later due to changes in the Terraform executable. To avoid any issues, please use Terraform version 1.4.5 or older. For further details, refer to the issue at https://github.com/hrmsk66/terraformify/issues/49.
-
-<details>
-  <summary>Click to expand and see the demo video</summary>
-  
-  https://user-images.githubusercontent.com/30490956/169726673-33ecccf7-ae40-4ebd-acf7-e4d457d4f510.mp4
-</details>
+> `terraformify` is not compatible with Terraform versions 1.4.6 and later because of changes in the Terraform binary. To avoid any issues, please use `terraformify` with Terraform version 1.4.5 or earlier. For more information, see the issue at https://github.com/hrmsk66/terraformify/issues/49.
 
 ## Installation / Upgrade
 
@@ -50,11 +44,11 @@ terraformify service compute <service-id> <path-to-package>
 
 For more detailed usage instructions, including available flags and commands, see the [Usage Documentation](docs/USAGE.md).
 
-## Supported Resources for Import
+## Supported Resources
 
 `terraformify` supports the import of both Compute and VCL services, along with their associated resources. The following resources are supported:
 
-### Resources Supported for Compute Services
+### Supported Resources for Compute
 
 - [fastly_service_compute](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_compute)
 - [fastly_configstore](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/configstore)
@@ -63,7 +57,7 @@ For more detailed usage instructions, including available flags and commands, se
 - [fastly_kvstore](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/kvstore)
 - [fastly_service_dictionary_items](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_dictionary_items)
 
-### Resources Supported for VCL Services
+### Supported Resources for VCL
 
 - [fastly_service_vcl](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_vcl)
 - [fastly_service_acl_entries](https://registry.terraform.io/providers/fastly/fastly/latest/docs/resources/service_acl_entries)
