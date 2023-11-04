@@ -4,7 +4,7 @@ An experimental CLI that generates Terraform files for managing existing Fastly 
 
 > [!IMPORTANT]
 > **Known Issue: Incompatibility with Terraform 1.4.6 and Later**<br>
-> `terraformify` is not compatible with Terraform versions 1.4.6 and later because of changes in the Terraform binary. To avoid any issues, please use `terraformify` with Terraform version 1.4.5 or earlier. For more information, see the issue at https://github.com/hrmsk66/terraformify/issues/49.
+> `terraformify` is not compatible with Terraform versions 1.4.6 and later because of changes in the Terraform binary. Please use `terraformify` with Terraform version 1.4.5 or earlier. For more information, see the issue at https://github.com/hrmsk66/terraformify/issues/49.
 
 ## Installation / Upgrade
 
