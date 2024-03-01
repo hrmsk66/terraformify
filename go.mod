@@ -11,7 +11,7 @@ require (
 	github.com/itchyny/gojq v0.12.13
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
-	github.com/zclconf/go-cty v1.14.1
+	github.com/zclconf/go-cty v1.14.3
 )
 
 require (
