@@ -25,6 +25,7 @@ type Config struct {
 	ForceDestroy  bool
 	SkipEditState bool
 	TestMode      bool
+	ReplaceDictionary bool
 }
 
 var Bold = color.New(color.Bold).SprintFunc()

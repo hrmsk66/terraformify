@@ -18,7 +18,7 @@ import (
 // computeCmd represents the service command
 var computeCmd = &cobra.Command{
 	Use:          "compute <service-id> <path-to-package>",
-	Short:        "Generate TF files for an existing Fastly C@E service",
+	Short:        "Generate TF files for an existing Fastly Compute service",
 	Args:         cobra.ExactArgs(2),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -85,6 +85,11 @@ var computeCmd = &cobra.Command{
 			return err
 		}
 
+		replaceDictionary, err := cmd.Flags().GetBool("replace-edge-dictionary")
+		if err != nil {
+			return err
+		}
+
 		c := cli.Config{
 			ID:            args[0],
 			Package:       packagePath,
@@ -95,6 +100,7 @@ var computeCmd = &cobra.Command{
 			ForceDestroy:  forceDestroy,
 			SkipEditState: skipEditState,
 			TestMode:      testMode,
+			ReplaceDictionary: replaceDictionary,
 		}
 
 		return ImportCompute(c)
@@ -103,6 +109,9 @@ var computeCmd = &cobra.Command{
 
 func init() {
 	serviceCmd.AddCommand(computeCmd)
+
+	// Persistent flags
+	serviceCmd.PersistentFlags().BoolP("replace-edge-dictionary", "r", false, "Generate TF files to replace edge dictionaries with config stores")
 }
 
 func ImportCompute(c cli.Config) error {
@@ -132,7 +141,7 @@ func ImportCompute(c cli.Config) error {
 		return err
 	}
 
-	// Create VCLServiceResourceProp struct
+	// Create ComputeServiceResourceProp struct
 	serviceProp := prop.NewComputeServiceResource(c.ID, c.ResourceName, c.Version)
 
 	if err = terraform.Import(tf, serviceProp, tempf); err != nil {
@@ -323,5 +332,15 @@ func ImportCompute(c cli.Config) error {
 
 	fmt.Fprintln(os.Stderr)
 	cli.BoldGreen(os.Stderr, "Completed!")
+
+	if c.ReplaceDictionary {
+		msg := `Note:
+Running "terraform apply" will create a new draft version with Edge Dictionaries replaced by Config Stores.
+It won't be activated as the "activate" attribute is set to "false" in the "fastly_compute_service" resource.
+Please review the configuration and make any necessary changes before manually activating the new version.
+`
+		fmt.Fprintln(os.Stderr)
+		cli.BoldYellow(os.Stderr, msg)
+	}
 	return nil
 }
