@@ -87,6 +87,13 @@ func (tfconf *TFConf) ParseServiceResource(serviceProp prop.TFBlock, c *cli.Conf
 				prop := prop.NewACLResource(id, name, serviceProp)
 				props = append(props, prop)
 			case "dictionary":
+				write_only, err := getBoolAttributeValue(block, "write_only")
+				if err != nil {
+					return nil, err
+				}
+				if write_only {
+					continue
+				}
 				id, err := getStringAttributeValue(block, "dictionary_id")
 				if err != nil {
 					return nil, err
@@ -160,7 +167,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, props []prop.TF
 				continue
 			}
 
-			sensitiveAttrs, err = rewriteVCLServiceResource(block, serviceProp, state, c)
+			sensitiveAttrs, err = rewriteVCLServiceResource(block, state, c)
 			if err != nil {
 				return nil, err
 			}
@@ -254,7 +261,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, props []prop.TF
 	return sensitiveAttrs, nil
 }
 
-func rewriteVCLServiceResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) ([]SensitiveAttr, error) {
+func rewriteVCLServiceResource(block *hclwrite.Block, s *tfstate.TFState, c *cli.Config) ([]SensitiveAttr, error) {
 	var sensitiveAttrs []SensitiveAttr
 
 	st, err := s.AddTemplate(tfstate.ServiceQueryTmplate)
@@ -754,7 +761,7 @@ func rewriteConfigStoreEntries(block *hclwrite.Block, props []prop.TFBlock, c *c
 }
 
 func rewriteACLResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) error {
-	if err := rewriteCommonAttributes(block, serviceProp, s, c); err != nil {
+	if err := rewriteCommonAttributes(block, serviceProp, s); err != nil {
 		return err
 	}
 
@@ -777,7 +784,7 @@ func rewriteACLResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfst
 }
 
 func rewriteDictionaryResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) error {
-	if err := rewriteCommonAttributes(block, serviceProp, s, c); err != nil {
+	if err := rewriteCommonAttributes(block, serviceProp, s); err != nil {
 		return err
 	}
 
@@ -790,7 +797,7 @@ func rewriteDictionaryResource(block *hclwrite.Block, serviceProp prop.TFBlock, 
 }
 
 func rewriteDynamicSnippetResource(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) error {
-	if err := rewriteCommonAttributes(block, serviceProp, s, c); err != nil {
+	if err := rewriteCommonAttributes(block, serviceProp, s); err != nil {
 		return err
 	}
 
@@ -828,7 +835,7 @@ func rewriteDynamicSnippetResource(block *hclwrite.Block, serviceProp prop.TFBlo
 	return nil
 }
 
-func rewriteCommonAttributes(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState, c *cli.Config) error {
+func rewriteCommonAttributes(block *hclwrite.Block, serviceProp prop.TFBlock, s *tfstate.TFState) error {
 	var idName, attrName string
 	switch block.Labels()[0] {
 	case "fastly_service_dynamic_snippet_content":
@@ -908,6 +915,33 @@ func appendFastlyPackageHashBlock(tfconf *TFConf, serviceProp prop.TFBlock, conf
 	p.Body().SetAttributeValue("filename", cty.StringVal(config.Package))
 }
 
+func getBoolAttributeValue(block *hclwrite.Block, attrKey string) (bool, error) {
+	attr := block.Body().GetAttribute(attrKey)
+	if attr == nil {
+		return false, fmt.Errorf(`%w: failed to find "%s" in "%s"`, ErrAttrNotFound, attrKey, block.Type())
+	}
+
+	return extractBoolValue(attr)
+}
+
+func extractBoolValue(attr *hclwrite.Attribute) (bool, error) {
+	expr := attr.Expr()
+	exprTokens := expr.BuildTokens(nil)
+
+	for _, token := range exprTokens {
+		if token.Type == hclsyntax.TokenIdent {
+			switch string(token.Bytes) {
+			case "true":
+				return true, nil
+			case "false":
+				return false, nil
+			}
+		}
+	}
+
+	return false, fmt.Errorf("failed to find a boolean value: %#v", attr)
+}
+
 func getStringAttributeValue(block *hclwrite.Block, attrKey string) (string, error) {
 	// find TokenQuotedLit
 	attr := block.Body().GetAttribute(attrKey)
@@ -929,17 +963,6 @@ func getStringAttributeValue(block *hclwrite.Block, attrKey string) (string, err
 
 	value := string(exprTokens[i].Bytes)
 	return value, nil
-}
-
-func buildFilesha512Function(path string) hclwrite.Tokens {
-	return hclwrite.Tokens{
-		{Type: hclsyntax.TokenIdent, Bytes: []byte("filesha512")},
-		{Type: hclsyntax.TokenOParen, Bytes: []byte{'('}},
-		{Type: hclsyntax.TokenOQuote, Bytes: []byte{'"'}},
-		{Type: hclsyntax.TokenQuotedLit, Bytes: []byte(path)},
-		{Type: hclsyntax.TokenCQuote, Bytes: []byte{'"'}},
-		{Type: hclsyntax.TokenCParen, Bytes: []byte{')'}},
-	}
 }
 
 func buildFileFunction(path string) hclwrite.Tokens {
