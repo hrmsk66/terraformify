@@ -196,7 +196,7 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, props []prop.TF
 				return nil, err
 			}
 		case "fastly_service_waf_configuration":
-			id, err := getStringAttributeValue(block, "waf_id")
+			id, err = getStringAttributeValue(block, "waf_id")
 			if err != nil {
 				return nil, err
 			}
@@ -246,11 +246,15 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, props []prop.TF
 				if err != nil {
 					return nil, err
 				}
-				st, err := state.AddTemplate(tfstate.ResourceNameQueryTmplate)
+
+				var st *tfstate.TFStateWithTemplate
+				st, err = state.AddTemplate(tfstate.ResourceNameQueryTmplate)
 				if err != nil {
 					return nil, err
 				}
-				resourceName, err := st.ResourceNameQuery(tfstate.ResourceNameQueryParams{
+
+				var resourceName *tfstate.TFState
+				resourceName, err = st.ResourceNameQuery(tfstate.ResourceNameQueryParams{
 					ResourceType:    serviceProp.GetType(),
 					NestedBlockName: "dictionary",
 					IDName:          "dictionary_id",
