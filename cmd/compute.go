@@ -91,15 +91,15 @@ var computeCmd = &cobra.Command{
 		}
 
 		c := cli.Config{
-			ID:            args[0],
-			Package:       packagePath,
-			ResourceName:  resourceName,
-			Version:       version,
-			Directory:     workingDir,
-			ManageAll:     manageAll,
-			ForceDestroy:  forceDestroy,
-			SkipEditState: skipEditState,
-			TestMode:      testMode,
+			ID:                args[0],
+			Package:           packagePath,
+			ResourceName:      resourceName,
+			Version:           version,
+			Directory:         workingDir,
+			ManageAll:         manageAll,
+			ForceDestroy:      forceDestroy,
+			SkipEditState:     skipEditState,
+			TestMode:          testMode,
 			ReplaceDictionary: replaceDictionary,
 		}
 
