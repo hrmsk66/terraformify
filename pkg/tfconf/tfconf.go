@@ -258,6 +258,9 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, props []prop.TF
 		}
 	}
 
+	// Append output block
+	appendOutputBlock(tfconf, serviceProp)
+
 	return sensitiveAttrs, nil
 }
 
@@ -909,6 +912,12 @@ func rewriteWAFResource(block *hclwrite.Block, serviceProp prop.TFBlock) error {
 	return nil
 }
 
+func appendOutputBlock(tfconf *TFConf, serviceProp prop.TFBlock) {
+	tfconf.Body().AppendNewline()
+	p := tfconf.Body().AppendNewBlock("output", []string{"fastly_service_url"})
+	p.Body().SetAttributeRaw("value", buildServiceURL(serviceProp))
+}
+
 func appendFastlyPackageHashBlock(tfconf *TFConf, serviceProp prop.TFBlock, config *cli.Config) {
 	tfconf.Body().AppendNewline()
 	p := tfconf.Body().AppendNewBlock("data", []string{"fastly_package_hash", serviceProp.GetNormalizedName()})
@@ -1020,6 +1029,16 @@ func buildServiceIDRef(serviceProp prop.TFBlock) hcl.Traversal {
 		hcl.TraverseRoot{Name: serviceProp.GetType()},
 		hcl.TraverseAttr{Name: serviceProp.GetNormalizedName()},
 		hcl.TraverseAttr{Name: "id"},
+	}
+}
+
+func buildServiceURL(serviceProp prop.TFBlock) hclwrite.Tokens {
+	return hclwrite.Tokens{
+		{Type: hclsyntax.TokenOQuote, Bytes: []byte{'"'}},
+		{Type: hclsyntax.TokenStringLit, Bytes: []byte("https://cfg.fastly.com/${")},
+		{Type: hclsyntax.TokenStringLit, Bytes: []byte(serviceProp.GetRef())},
+		{Type: hclsyntax.TokenStringLit, Bytes: []byte(".id}")},
+		{Type: hclsyntax.TokenCQuote, Bytes: []byte{'"'}},
 	}
 }
 
