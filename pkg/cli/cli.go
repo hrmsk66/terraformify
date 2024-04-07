@@ -14,17 +14,18 @@ import (
 )
 
 type Config struct {
-	ID            string
-	ResourceName  string
-	WafID         string
-	Package       string
-	Directory     string
-	Version       int
-	Interactive   bool
-	ManageAll     bool
-	ForceDestroy  bool
-	SkipEditState bool
-	TestMode      bool
+	ID                string
+	ResourceName      string
+	WafID             string
+	Package           string
+	Directory         string
+	Version           int
+	Interactive       bool
+	ManageAll         bool
+	ForceDestroy      bool
+	SkipEditState     bool
+	TestMode          bool
+	ReplaceDictionary bool
 }
 
 var Bold = color.New(color.Bold).SprintFunc()

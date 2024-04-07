@@ -64,7 +64,7 @@ func prep(t *testing.T, files ...string) (*terraform.Options, error) {
 		return nil, err
 	}
 
-	// Copy C@E package file to the test directory
+	// Copy Compute package file to the test directory
 	if len(files) == 2 {
 		pkg, err := os.ReadFile("../testdata/" + files[1])
 		if err != nil {
