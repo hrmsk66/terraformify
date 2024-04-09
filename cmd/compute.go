@@ -17,19 +17,24 @@ import (
 
 // computeCmd represents the service command
 var computeCmd = &cobra.Command{
-	Use:          "compute <service-id> <path-to-package>",
+	Use:          "compute <service-id>",
 	Short:        "Generate TF files for an existing Fastly Compute service",
-	Args:         cobra.ExactArgs(2),
+	Args:         cobra.ExactArgs(1),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filter := cli.CreateLogFilter()
 		log.Printf("[INFO] CLI version: %s", getVersion())
 		log.SetOutput(filter)
 
-		packagePath := args[1]
-		err := file.CheckPackage(packagePath)
+		packagePath, err := cmd.Flags().GetString("package")
 		if err != nil {
 			return err
+		}
+
+		if packagePath != "" {
+			if err = file.CheckPackage(packagePath); err != nil {
+				return err
+			}
 		}
 
 		workingDir, err := cmd.Flags().GetString("working-dir")
@@ -111,7 +116,9 @@ func init() {
 	serviceCmd.AddCommand(computeCmd)
 
 	// Persistent flags
+	serviceCmd.PersistentFlags().StringP("package", "p", "", "Path to the Compute service package file")
 	serviceCmd.PersistentFlags().BoolP("replace-edge-dictionary", "r", false, "Generate TF files to replace edge dictionaries with config stores")
+	serviceCmd.PersistentFlags().Lookup("replace-edge-dictionary").Hidden = true
 }
 
 func ImportCompute(c cli.Config) error {
@@ -263,13 +270,15 @@ func ImportCompute(c cli.Config) error {
 			return err
 		}
 
-		log.Printf(`[INFO] Inserting "filename: %s" in terraform.tfstate`, c.Package)
-		newState, err = newState.SetPackageFilename(tfstate.SetPackageFilenameParams{
-			ServiceId:       c.ID,
-			PackageFilename: c.Package,
-		})
-		if err != nil {
-			return err
+		if c.Package != "" {
+			log.Printf(`[INFO] Inserting "filename: %s" in terraform.tfstate`, c.Package)
+			newState, err = newState.SetPackageFilename(tfstate.SetPackageFilenameParams{
+				ServiceId:       c.ID,
+				PackageFilename: c.Package,
+			})
+			if err != nil {
+				return err
+			}
 		}
 
 		if c.ManageAll {
@@ -333,14 +342,5 @@ func ImportCompute(c cli.Config) error {
 	fmt.Fprintln(os.Stderr)
 	cli.BoldGreen(os.Stderr, "Completed!")
 
-	if c.ReplaceDictionary {
-		msg := `Note:
-Running "terraform apply" will create a new draft version with Edge Dictionaries replaced by Config Stores.
-It won't be activated as the "activate" attribute is set to "false" in the "fastly_compute_service" resource.
-Please review the configuration and make any necessary changes before manually activating the new version.
-`
-		fmt.Fprintln(os.Stderr)
-		cli.BoldYellow(os.Stderr, msg)
-	}
 	return nil
 }

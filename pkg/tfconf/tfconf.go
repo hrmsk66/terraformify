@@ -181,8 +181,10 @@ func (tfconf *TFConf) RewriteResources(serviceProp prop.TFBlock, props []prop.TF
 				continue
 			}
 
-			// Add "fastly_package_hash" data block
-			appendFastlyPackageHashBlock(tfconf, serviceProp, c)
+			// Add "fastly_package_hash" data block if package is set
+			if c.Package != "" {
+				appendFastlyPackageHashBlock(tfconf, serviceProp, c)
+			}
 
 			sensitiveAttrs, err = rewriteComputeServiceResource(block, serviceProp, props, state, c)
 			if err != nil {
@@ -670,8 +672,15 @@ func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlo
 		case "product_enablement":
 			nestedBlockBody.RemoveAttribute("name")
 		case "package":
-			nestedBlockBody.SetAttributeTraversal("filename", buildPackageHashRef(serviceProp, "filename"))
-			nestedBlockBody.SetAttributeTraversal("source_code_hash", buildPackageHashRef(serviceProp, "hash"))
+			if c.Package != "" {
+				// Rewrite package block if package is set
+				nestedBlockBody.SetAttributeTraversal("filename", buildPackageHashRef(serviceProp, "filename"))
+				nestedBlockBody.SetAttributeTraversal("source_code_hash", buildPackageHashRef(serviceProp, "hash"))
+			} else {
+				// Set empty string for filename if package is not set
+				nestedBlockBody.SetAttributeValue("filename", cty.StringVal(""))
+			}
+
 		case "resource_link":
 			resourceId, err := getStringAttributeValue(nestedBlock, "resource_id")
 			if err != nil {
@@ -784,12 +793,6 @@ func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlo
 				}
 			}
 		}
-	}
-
-	if c.ReplaceDictionary {
-		// Set "activate" to false
-		body.AppendNewline()
-		body.SetAttributeValue("activate", cty.BoolVal(false))
 	}
 
 	return sensitiveAttrs, nil
