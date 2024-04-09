@@ -39,7 +39,7 @@ terraformify service vcl <service-id>
 For Compute services, provide the service ID and the path to the WASM package as arguments:
 
 ```
-terraformify service compute <service-id> <path-to-package>
+terraformify service compute <service-id> -p <path-to-package>
 ```
 
 For more detailed usage instructions, including available flags and commands, see the [Usage Documentation](docs/USAGE.md).
