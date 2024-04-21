@@ -14,6 +14,8 @@ require (
 	github.com/zclconf/go-cty v1.14.4
 )
 
+replace github.com/hashicorp/terraform-exec => github.com/hrmsk66/terraform-exec v0.21.0
+
 require (
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
