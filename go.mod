@@ -3,7 +3,7 @@ module github.com/hrmsk66/terraformify
 go 1.18
 
 require (
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.17.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hcl/v2 v2.20.1
 	github.com/hashicorp/logutils v1.0.0
