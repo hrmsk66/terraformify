@@ -913,32 +913,43 @@ func rewriteDynamicSnippetResource(block *hclwrite.Block, serviceProp prop.TFBlo
 
 	// replace content value with file()
 	name := block.Labels()[1]
-
-	// Get content from the state file
-	st, err := s.AddTemplate(tfstate.DsnippetQueryTmplate)
-	if err != nil {
-		return err
-	}
-	v, err := st.DSnippetQuery(tfstate.DSnippetQueryParams{
-		ResourceName: name,
-	})
-	if err != nil {
-		return err
-	}
-
-	// Save content to a file
-	filename := fmt.Sprintf("dsnippet_%s.vcl", naming.Normalize(name))
-	if err = file.WriteVCL(c.Directory, c.ResourceName, filename, v.Bytes()); err != nil {
-		return err
-	}
-
-	// Replace content attribute with file function expression
 	body := block.Body()
-	path := filepath.Join(".", "vcl", c.ResourceName, filename)
-	tokens := buildFileFunction(path)
-	body.SetAttributeRaw("content", tokens)
 
-	if c.ManageAll {
+	switch name {
+	case "ngwaf_config_init":
+		body.SetAttributeValue("content", cty.StringVal("### Fastly managed ngwaf_config_init"))
+	case "ngwaf_config_miss":
+		body.SetAttributeValue("content", cty.StringVal("### Fastly managed ngwaf_config_miss"))
+	case "ngwaf_config_pass":
+		body.SetAttributeValue("content", cty.StringVal("### Fastly managed ngwaf_config_pass"))
+	case "ngwaf_config_deliver":
+		body.SetAttributeValue("content", cty.StringVal("### Fastly managed ngwaf_config_deliver"))
+	default:
+		// Get content from the state file
+		st, err := s.AddTemplate(tfstate.DsnippetQueryTmplate)
+		if err != nil {
+			return err
+		}
+		v, err := st.DSnippetQuery(tfstate.DSnippetQueryParams{
+			ResourceName: name,
+		})
+		if err != nil {
+			return err
+		}
+
+		// Save content to a file
+		filename := fmt.Sprintf("dsnippet_%s.vcl", naming.Normalize(name))
+		if err = file.WriteVCL(c.Directory, c.ResourceName, filename, v.Bytes()); err != nil {
+			return err
+		}
+
+		// Replace content attribute with file function expression
+		path := filepath.Join(".", "vcl", c.ResourceName, filename)
+		tokens := buildFileFunction(path)
+		body.SetAttributeRaw("content", tokens)
+	}
+
+	if c.ManageAll && !strings.HasPrefix(name, "ngwaf_config_") {
 		body.SetAttributeValue("manage_snippets", cty.BoolVal(true))
 	}
 

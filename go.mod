@@ -8,13 +8,11 @@ require (
 	github.com/hashicorp/hcl/v2 v2.20.1
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-exec v0.20.0
-	github.com/spf13/viper v1.19.0
-	github.com/spf13/cobra v1.8.1
 	github.com/itchyny/gojq v0.12.16
+	github.com/spf13/cobra v1.8.1
+	github.com/spf13/viper v1.19.0
 	github.com/zclconf/go-cty v1.14.4
 )
-
-replace github.com/hashicorp/terraform-exec => github.com/hrmsk66/terraform-exec v0.21.0
 
 require (
 	github.com/agext/levenshtein v1.2.3 // indirect
