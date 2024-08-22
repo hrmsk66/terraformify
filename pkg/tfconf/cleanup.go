@@ -90,6 +90,8 @@ func cleanupHCL(rawHCL string) string {
 				switch {
 				case strings.HasPrefix(trimedText, "backend"):
 					blocks = append(blocks, "backend")
+				case strings.HasPrefix(trimedText, "rate_limiter"):
+					blocks = append(blocks, "rate_limiter")
 				case strings.HasPrefix(trimedText, "response_object"):
 					blocks = append(blocks, "response_object")
 				case strings.HasPrefix(trimedText, "snippet"):
@@ -100,6 +102,11 @@ func cleanupHCL(rawHCL string) string {
 					blocks = append(blocks, "logging")
 				default:
 					blocks = append(blocks, "other")
+				}
+			case 2:
+				// If we're inside "rate_limiter" block, check if it's a "response" block
+				if blocks[len(blocks)-1] == "rate_limiter" && strings.HasPrefix(trimedText, "response ") {
+					blocks = append(blocks, "response")
 				}
 			}
 		}
@@ -115,7 +122,8 @@ func cleanupHCL(rawHCL string) string {
 		}
 
 		// Special handling for nested blocks
-		if len(blocks) > 0 {
+		switch len(blocks) {
+		case 1:
 			if blocks[len(blocks)-1] == "fastly_service_dynamic_snippet_content" {
 				switch {
 				case strings.HasPrefix(trimedText, "content "):
@@ -123,7 +131,7 @@ func cleanupHCL(rawHCL string) string {
 					text = truncateValue(text)
 				}
 			}
-
+		case 2:
 			if blocks[len(blocks)-1] == "backend" {
 				switch {
 				case strings.HasSuffix(trimedText, "(sensitive value)"):
@@ -161,6 +169,14 @@ func cleanupHCL(rawHCL string) string {
 					handleMultilineStrings(trimedText)
 					text = truncateValue(text)
 				case strings.HasSuffix(trimedText, "(sensitive value)"):
+					text = truncateValue(text)
+				}
+			}
+		case 3:
+			if blocks[len(blocks)-2] == "rate_limiter" && blocks[len(blocks)-1] == "response" {
+				switch {
+				case strings.HasPrefix(trimedText, "content "):
+					handleMultilineStrings(trimedText)
 					text = truncateValue(text)
 				}
 			}

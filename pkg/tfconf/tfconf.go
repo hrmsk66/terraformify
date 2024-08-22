@@ -362,6 +362,49 @@ func rewriteVCLServiceResource(block *hclwrite.Block, s *tfstate.TFState, c *cli
 			nestedBlockBody.RemoveAttribute("snippet_id")
 		case "product_enablement":
 			nestedBlockBody.RemoveAttribute("name")
+		case "rate_limiter":
+			nestedBlockBody.RemoveAttribute("ratelimiter_id")
+
+			// Get action from the nested block
+			action, err := getStringAttributeValue(nestedBlock, "action")
+			if err != nil {
+				return nil, err
+			}
+
+			// If the action is "response", rewrite the content attribute
+			if action == "response" {
+				responseBlock := nestedBlockBody.FirstMatchingBlock("response", []string{})
+				responseBlockBody := responseBlock.Body()
+
+				// Get content from TFState
+				t, err := s.AddTemplate(tfstate.RateLimiterContentQueryTemplate)
+				if err != nil {
+					return nil, err
+				}
+				name, err := getStringAttributeValue(nestedBlock, "name")
+				if err != nil {
+					return nil, err
+				}
+				v, err := t.RateLimiterContentQuery(tfstate.RateLimiterContentQueryParams{
+					ServiceId: c.ID,
+					Name:      name,
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				// Save content to a file
+				ext := "txt"
+				filename := fmt.Sprintf("%s.%s", naming.Normalize(name), ext)
+				if err = file.WriteContent(c.Directory, c.ResourceName, filename, v.Bytes()); err != nil {
+					return nil, err
+				}
+
+				// Replace content attribute of the nested block with file function expression
+				path := filepath.Join(".", "content", c.ResourceName, filename)
+				tokens := buildFileFunction(path)
+				responseBlockBody.SetAttributeRaw("content", tokens)
+			}
 		case "request_setting":
 			nestedBlockBody.RemoveAttribute("geo_headers")
 
