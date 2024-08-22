@@ -8,8 +8,8 @@ require (
 	github.com/hashicorp/hcl/v2 v2.20.1
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-exec v0.20.0
+	github.com/spf13/cobra v1.8.1
 	github.com/itchyny/gojq v0.12.16
-	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	github.com/zclconf/go-cty v1.14.4
 )
