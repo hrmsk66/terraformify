@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/fatih/color v1.17.0
 	github.com/hashicorp/go-version v1.7.0
-	github.com/hashicorp/hcl/v2 v2.21.0
+	github.com/hashicorp/hcl/v2 v2.22.0
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-exec v0.21.0
 	github.com/itchyny/gojq v0.12.16
