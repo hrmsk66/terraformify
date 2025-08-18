@@ -518,6 +518,12 @@ func rewriteVCLServiceResource(block *hclwrite.Block, s *tfstate.TFState, c *cli
 		case "backend":
 			name, err := getStringAttributeValue(nestedBlock, "name")
 			if err != nil {
+				// If we can't get the name attribute (likely due to sensitive value masking),
+				// skip processing this backend block
+				if errors.Is(err, ErrAttrNotFound) {
+					log.Printf("[WARN] Backend block has no accessible name attribute (likely due to sensitive values), skipping sensitive attribute processing")
+					continue
+				}
 				return nil, err
 			}
 
@@ -543,6 +549,12 @@ func rewriteVCLServiceResource(block *hclwrite.Block, s *tfstate.TFState, c *cli
 			if strings.HasPrefix(nestedBlockType, "logging_") {
 				name, err := getStringAttributeValue(nestedBlock, "name")
 				if err != nil {
+					// If we can't get the name attribute (likely due to sensitive value masking),
+					// skip processing this logging block
+					if errors.Is(err, ErrAttrNotFound) {
+						log.Printf("[WARN] Logging block %s has no accessible name attribute (likely due to sensitive values), skipping processing", nestedBlockType)
+						continue
+					}
 					return nil, err
 				}
 
@@ -740,6 +752,12 @@ func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlo
 		case "backend":
 			name, err := getStringAttributeValue(nestedBlock, "name")
 			if err != nil {
+				// If we can't get the name attribute (likely due to sensitive value masking),
+				// skip processing this backend block
+				if errors.Is(err, ErrAttrNotFound) {
+					log.Printf("[WARN] Backend block has no accessible name attribute (likely due to sensitive values), skipping sensitive attribute processing")
+					continue
+				}
 				return nil, err
 			}
 
@@ -765,6 +783,12 @@ func rewriteComputeServiceResource(block *hclwrite.Block, serviceProp prop.TFBlo
 			if strings.HasPrefix(nestedBlockType, "logging_") {
 				name, err := getStringAttributeValue(nestedBlock, "name")
 				if err != nil {
+					// If we can't get the name attribute (likely due to sensitive value masking),
+					// skip processing this logging block
+					if errors.Is(err, ErrAttrNotFound) {
+						log.Printf("[WARN] Logging block %s has no accessible name attribute (likely due to sensitive values), skipping processing", nestedBlockType)
+						continue
+					}
 					return nil, err
 				}
 
